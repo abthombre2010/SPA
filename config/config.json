@@ -1,0 +1,28 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
+  "version": "2.0",
+  "bundles": {
+    "spa-form-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/spaForm/SpaFormWebPart.js",
+          "manifest": "./src/webparts/spaForm/SpaFormWebPart.manifest.json"
+        }
+      ]
+    },
+    "spa-button-command-set": {
+      "components": [
+        {
+          "entrypoint": "./lib/extensions/spaButton/SpaButtonCommandSet.js",
+          "manifest": "./src/extensions/spaButton/SpaButtonCommandSet.manifest.json"
+        }
+      ]
+    }
+  },
+  "externals": {},
+  "localizedResources": {
+    "SpaFormWebPartStrings": "lib/webparts/spaForm/loc/{locale}.js",
+    "ControlStrings": "node_modules/@pnp/spfx-controls-react/lib/loc/{locale}.js",
+    "SpaButtonCommandSetStrings": "lib/extensions/spaButton/loc/{locale}.js"
+  }
+}

@@ -1,0 +1,3 @@
+button[data-automationid="newCommand"] {
+    display: none !important;
+  }

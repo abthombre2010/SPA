@@ -1,0 +1,19 @@
+{
+  "@microsoft/generator-sharepoint": {
+    "plusBeta": false,
+    "isCreatingSolution": false,
+    "nodeVersion": "18.18.1",
+    "sdksVersions": {},
+    "version": "1.21.1",
+    "libraryName": "spa",
+    "libraryId": "d0215840-65ae-4838-9377-8ebde2b3d6e2",
+    "environment": "spo",
+    "packageManager": "npm",
+    "solutionName": "SPA",
+    "solutionShortDescription": "SPA description",
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "componentType": "extension",
+    "extensionType": "ListViewCommandSet"
+  }
+}
