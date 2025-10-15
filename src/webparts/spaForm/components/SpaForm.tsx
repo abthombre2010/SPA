@@ -13,7 +13,7 @@ import { ClockLoader } from "react-spinners";
 require('../../../shared/styles/common.scss');
 import { WorkFlowStatus } from '../../../shared/helpers/constant';
 import Select from 'react-select';
-//import {HttpClient,HttpClientResponse,IHttpClientOptions} from '@microsoft/sp-http';
+import {HttpClient,HttpClientResponse,IHttpClientOptions} from '@microsoft/sp-http';
 
 interface ISpaFormState{
   formData:any;
@@ -39,6 +39,7 @@ interface ISpaFormState{
   hasApprovalAccess:any;
   ApprovalComments:any;
   RequesterComments:any;
+  SPAApprovers:any;
 }
 
 export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState> {
@@ -70,7 +71,7 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
           "SHIPMENT":"",
           "OCN_x0020_SELLING_x0020_PRICE":"0",
           "MARGIN":"0",
-          "MARGIN_x0020_PERCENTAGE":"",
+          "MARGIN_x0020_PERCENTAGE":"0",
           "RM_x0020_ARRIVAL_x0020_DATE":null,
           "LEAD_x0020_TIME":"",
           "FINAL_x0020_PRICE":"0",
@@ -92,7 +93,8 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
           "REFERENCE_x0020_NUMBER":"",
           "CHILLI_x0020_RELATED_x0020_PURCH":"",
           "CUSTOMER_x0020_NAME":"",
-          "ENTEY_x0020_LEVEL2_x0020_REQUIRE":""  
+          "ENTEY_x0020_LEVEL2_x0020_REQUIRE":"",
+          "ENTEY_x0020_LEVEL2_x0020_NAME":""  
       },
       updateItemId:0,
       itemId:0,
@@ -112,7 +114,8 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
       approveRejectAction:"",
       hasApprovalAccess:false,
       ApprovalComments:"",
-      RequesterComments:""
+      RequesterComments:"",
+      SPAApprovers:""
     }
     this.spService=new spservices(this.props.context);
     this.log=new LoggingService(this.props.context);
@@ -138,8 +141,8 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
     try{
       let currentUser=await this.spService.getCurrentUser(); 
       let Master_dropdownValue:any=await this.spService.getChoiceColumnsAndValues(this.props.listName);
-
-      this.setState({Master_dropdownValue:Master_dropdownValue,currentUser:currentUser});
+      let SPAApprovers:any=await this.spService.getListItem(ListTitles.SPAApprovers,"*","","");
+      this.setState({Master_dropdownValue:Master_dropdownValue,currentUser:currentUser,SPAApprovers:SPAApprovers});
       
     }catch(error){
       await this.log.Error({
@@ -164,7 +167,7 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
       let SelectedCHILLI_x0020_RELATED_x0020_PURCH =  this.state.Master_dropdownValue["CHILLI RELATED PURCHASE"].filter((c:any)=>c.value == existingItem[0]["CHILLI_x0020_RELATED_x0020_PURCH"]);
       let SelectedENTEY_x0020_LEVEL2_x0020_REQUIRE =  this.state.Master_dropdownValue["ENTEY LEVEL2 REQUIRED"].filter((c:any)=>c.value == existingItem[0]["ENTEY_x0020_LEVEL2_x0020_REQUIRE"]);
       let SelectedTEMPLATE_x0020_TYPE =  this.state.Master_dropdownValue["TEMPLATE TYPE"].filter((c:any)=>c.value == existingItem[0]["TEMPLATE_x0020_TYPE"]);
-      let SelectedSUPPLIER_x0020_TYPE =  this.state.Master_dropdownValue["TEMPLATE TYPE"].filter((c:any)=>c.value == existingItem[0]["SUPPLIER_x0020_TYPE"]);
+      let SelectedSUPPLIER_x0020_TYPE =  this.state.Master_dropdownValue["SUPPLIER TYPE"].filter((c:any)=>c.value == existingItem[0]["SUPPLIER_x0020_TYPE"]);
       let SelectedCURRENCY  =  this.state.Master_dropdownValue["CURRENCY"].filter((c:any)=>c.value == existingItem[0]["CURRENCY"]);
       let SelectedINCO_x0020_TERMS  =  this.state.Master_dropdownValue["INCO TERMS"].filter((c:any)=>c.value == existingItem[0]["INCO_x0020_TERMS"]);
       let SelectedPAYMENT_x0020_TERMS  =  this.state.Master_dropdownValue["PAYMENT TERMS"].filter((c:any)=>c.value == existingItem[0]["PAYMENT_x0020_TERMS"]);
@@ -211,74 +214,37 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
           "REFERENCE_x0020_NUMBER":existingItem[0]["REFERENCE_x0020_NUMBER"],
           "CHILLI_x0020_RELATED_x0020_PURCH":SelectedCHILLI_x0020_RELATED_x0020_PURCH, 
           "CUSTOMER_x0020_NAME":existingItem[0]["CUSTOMER_x0020_NAME"],
-          "ENTEY_x0020_LEVEL2_x0020_REQUIRE":SelectedENTEY_x0020_LEVEL2_x0020_REQUIRE  
+          "ENTEY_x0020_LEVEL2_x0020_REQUIRE":SelectedENTEY_x0020_LEVEL2_x0020_REQUIRE,
+          "ENTEY_x0020_LEVEL2_x0020_NAME":existingItem[0]["ENTEY_x0020_LEVEL2_x0020_NAME"],
       },existingItem:existingItem,disableEdit:true});
 
-      //hasApprovalAccess:true if pending with approver
       switch(existingItem[0].APPROVAL_x0020_STATUS){
-        case WorkFlowStatus.WaitingForBankChangesPlantReview : 
-            if(this.state.currentUser.Email.toLowerCase() == existingItem[0].EMAIL_x0020_ID_x0020_BANK_x0020_.toLowerCase()) this.setState({hasApprovalAccess:true});
+        case WorkFlowStatus.ENTRYLEVEL1COMPLETEDWAITINGFORENTRYLEVEL2 : 
+            if(this.state.currentUser.Email.toLowerCase() == existingItem[0].ENTEY_x0020_LEVEL2_x0020_EMAIL.toLowerCase()) this.setState({hasApprovalAccess:true});
         break;
 
-        case WorkFlowStatus.WaitingForVerifierReview : 
-            if(this.state.currentUser.Email.toLowerCase() == existingItem[0].VERIFIER_x0020_EMAIL_x0020_ID.toLowerCase()) this.setState({hasApprovalAccess:true});
+        case WorkFlowStatus.WAITINGFORPROCUREMENTLEADAPPROVAL : 
+            if(this.state.currentUser.Email.toLowerCase() == existingItem[0].APPROVER_x0020_LEVEL1_x0020_EMAI.toLowerCase()) this.setState({hasApprovalAccess:true});
         break;
 
-        case WorkFlowStatus.WaitingForTerritoryOfficerReview:{}
-          if(this.state.currentUser.Email.toLowerCase() == existingItem[0].TERRITORY_x0020_OFFICER_x0020_EM.toLowerCase()) this.setState({hasApprovalAccess:true});
+        case WorkFlowStatus.WAITINGFORAPPROVAL1 : 
+            if(this.state.currentUser.Email.toLowerCase() == existingItem[0].APPROVER_x0020_LEVEL1_x0020_EMAI.toLowerCase()) this.setState({hasApprovalAccess:true});
         break;
 
-        case WorkFlowStatus.WaitingForTerritoryOfficerAndABFLReview:{
-           if((this.state.existingItem[0].TERRITORY_x0020_OFFICER_x0020_RE==null && this.state.currentUser.Email.toLowerCase() == existingItem[0].TERRITORY_x0020_OFFICER_x0020_EM.toLowerCase()) || 
-              (this.state.currentUser.Email.toLowerCase() == existingItem[0].ABFL_x0020_EMAIL_x0020_ID.toLowerCase() && this.state.existingItem[0].ABFL_x0020_APPROVED_x0020_DATE==null))
-            this.setState({hasApprovalAccess:true});
-        }
+        case WorkFlowStatus.WAITINGFORAPPROVAL2:
+          if(this.state.currentUser.Email.toLowerCase() == existingItem[0].APPROVER_x0020_LEVEL2_x0020_EMAI.toLowerCase()) this.setState({hasApprovalAccess:true});
         break;
 
-        case WorkFlowStatus.WaitingforMDMCreation:
-          if(this.state.currentUser.Email.toLowerCase() == existingItem[0].MDM_x0020_EMAIL_x0020_ID.toLowerCase()) this.setState({hasApprovalAccess:true});
+        case WorkFlowStatus.WAITINGFORAPPROVAL3:
+          if(this.state.currentUser.Email.toLowerCase() == existingItem[0].APPROVER_x0020_LEVEL3_x0020_EMAI.toLowerCase()) this.setState({hasApprovalAccess:true});
         break; 
       }
 
 
-      if(existingItem[0]["APPROVAL_x0020_STATUS"].indexOf("Reject") !=-1 && existingItem[0].Author.Id == this.state.currentUser.Id){
+      if(existingItem[0]["APPROVAL_x0020_STATUS"].toLowerCase().indexOf("reject") !=-1 && existingItem[0].Author.Id == this.state.currentUser.Id){
         this.setState({hasEditPermission:true});
       }
-
-      switch(existingItem[0]["APPROVAL_x0020_STATUS"]){
-      case WorkFlowStatus.WaitingForBankChangesPlantReview:
-        if(existingItem[0].BANKLEVEL1ApproverComment!=null && existingItem[0].BANKLEVEL1ApproverComment!="")
-        this.setState({ApprovalComments:existingItem[0].BANKLEVEL1ApproverComment});
-      break;
-
-      case WorkFlowStatus.WaitingForVerifierReview:
-        if(existingItem[0].VERIFIER_x0020_REASON_x0020_FOR_!=null && existingItem[0].VERIFIER_x0020_REASON_x0020_FOR_!="")
-        this.setState({ApprovalComments:existingItem[0].VERIFIER_x0020_REASON_x0020_FOR_});
-        else  if(existingItem[0].COMMENTS_x0020_FOR_x0020_VERIFIE!=null && existingItem[0].COMMENTS_x0020_FOR_x0020_VERIFIE!="")
-        this.setState({ApprovalComments:existingItem[0].COMMENTS_x0020_FOR_x0020_VERIFIE}); 
-      break;
-
-				case WorkFlowStatus.WaitingForTerritoryOfficerReview:
-          if(existingItem[0].TERRITORY_x0020_OFFICER_x0020_RE0!=null && existingItem[0].TERRITORY_x0020_OFFICER_x0020_RE0!="")
-             this.setState({ApprovalComments:existingItem[0].TERRITORY_x0020_OFFICER_x0020_RE0});
-          else  if(existingItem[0].COMMENTS_x0020_FOR_x0020_TERRITO!=null && existingItem[0].COMMENTS_x0020_FOR_x0020_TERRITO!="")
-            this.setState({ApprovalComments:existingItem[0].COMMENTS_x0020_FOR_x0020_TERRITO}); 
-        break;
-
-				case WorkFlowStatus.WaitingForReviewersReview:
-          if(existingItem[0].ABFL_x0020_REASON_x0020_FOR_x002!=null && existingItem[0].ABFL_x0020_REASON_x0020_FOR_x002!="")
-             this.setState({ApprovalComments:existingItem[0].ABFL_x0020_REASON_x0020_FOR_x002});
-          else  if(existingItem[0].ABFL_x0020_COMMENTS!=null && existingItem[0].ABFL_x0020_COMMENTS!="")
-            this.setState({ApprovalComments:existingItem[0].ABFL_x0020_COMMENTS}); 
-        break; 
-				
-				case WorkFlowStatus.WaitingforMDMCreation:
-          if(existingItem[0].MDM_x0020_REASON_x0020_FOR_x0020!=null && existingItem[0].MDM_x0020_REASON_x0020_FOR_x0020!="")
-          this.setState({ApprovalComments:existingItem[0].MDM_x0020_REASON_x0020_FOR_x0020});
-          else  if(existingItem[0].MDM_x0020_COMMENTS!=null && existingItem[0].MDM_x0020_COMMENTS!="")
-          this.setState({ApprovalComments:existingItem[0].MDM_x0020_COMMENTS}); 
-        break;  
-      }
+     
     }
     }catch(error){
       await this.log.Error({
@@ -291,20 +257,56 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
   }
 
   public onTextBoxChangeEvent(field:any,ev:any){
+    let formData=this.state.formData;
+
     if(field=="ApprovalComments"){
       this.setState({ApprovalComments:ev.target.value});
     }else  if(field=="RequesterComments"){
       this.setState({RequesterComments:ev.target.value});
+    }else  if(field=="PRICE" || field=="QUANTITY"||field=="EXCHANGE_x0020_RATE"){
+      formData[field]= ev.target.value;
+      this.setState({formData:formData},this.calculateValueinRs);
+    }else  if(field=="OCN_x0020_SELLING_x0020_PRICE" || field=="MARGIN_x0020_PERCENTAGE"){
+      formData[field]= ev.target.value;
+      this.setState({formData:formData},this.calculateMargin);
     }else{
-      let formData=this.state.formData;
       formData[field]= ev.target.value;
       this.setState({formData:formData});
     }
   }
 
+  public calculateValueinRs(){
+    let formData=this.state.formData;
+    if(formData["PRICE"] != "" &&  formData["QUANTITY"] != "" && formData["EXCHANGE_x0020_RATE"] != "" ){
+      formData["VALUES_x0020_IN_x0020_RS"]= parseFloat(this.state.formData.PRICE) *parseFloat(this.state.formData.QUANTITY) * parseFloat(this.state.formData.EXCHANGE_x0020_RATE) 
+    }
+    this.setState({formData:formData});
+  }
+
+  public calculateMargin(){
+    let formData=this.state.formData;
+    if(formData["OCN_x0020_SELLING_x0020_PRICE"] != "" &&  formData["MARGIN_x0020_PERCENTAGE"] != ""  ){
+      formData["MARGIN"]= (parseFloat(this.state.formData.OCN_x0020_SELLING_x0020_PRICE) *parseFloat(this.state.formData.MARGIN_x0020_PERCENTAGE)) / 100; 
+    }
+    this.setState({formData:formData});
+  }
+
   public async onDropdownChangeEvent(field:any,ev:any,selectedOpt:any){
     let formData=this.state.formData;
     formData[field]=ev.value;
+
+    if(field=="ENTEY_x0020_LEVEL2_x0020_REQUIRE"){
+      if(ev.value == "YES"){
+        let approver:any= this.state.SPAApprovers.filter((x:any)=>x.Title == "ENTEY LEVEL2");
+        if(approver!=null && approver.length>0){
+          formData["ENTEY_x0020_LEVEL2_x0020_NAME"]=approver[0]["Approver1Name"];
+          formData["ENTEY_x0020_LEVEL2_x0020_EMAIL"]=approver[0]["Approver1Email"];
+        }
+      }else{
+        formData["ENTEY_x0020_LEVEL2_x0020_NAME"]="";
+        formData["ENTEY_x0020_LEVEL2_x0020_EMAIL"]="";
+      }
+    }
     this.setState({formData:formData});
   }
   
@@ -329,28 +331,28 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
       let formData:any=this.state.formData;
 
       let itemId:any=0;
-      //let nextApproverName:any="",to:any="";
+      let nextApproverName:any="",to:any="";
       
-      if(this.state.updateItemId==0 || (this.state.updateItemId!=0 && this.state.existingItem.length>0 && this.state.existingItem[0]["APPROVAL_x0020_STATUS"].indexOf("Reject") !=-1)){
-        
-        //let approverObj:any=await this.getWorkflowAction();
-        
-        if(this.state.formData.SELECT_x0020_MASTER_x0020_TO_x00=="UPDATE EXISTING VENDOR BANK DETAILS"){
-          formData.APPROVAL_x0020_STATUS= WorkFlowStatus.WaitingForBankChangesPlantReview;
-          //nextApproverName=approverObj.BankApprover;
-          //to=approverObj.BankApproverEmailId;
+      //if(this.state.updateItemId==0){
+        await this.getWorkflowAction(formData);
+        if(formData.ENTEY_x0020_LEVEL2_x0020_REQUIRE=="YES"){
+          nextApproverName=formData["ENTEY_x0020_LEVEL2_x0020_NAME"];
+          to=formData["ENTEY_x0020_LEVEL2_x0020_EMAIL"]
         }else{
-          formData.APPROVAL_x0020_STATUS= WorkFlowStatus.WaitingForVerifierReview;
-          //nextApproverName=approverObj.VerifierName;
-          //to=approverObj.VerifierEmailID;
+          nextApproverName=formData.APPROVER_x0020_LEVEL2_x0020_NAME;
+          to=formData.APPROVER_x0020_LEVEL1_x0020_EMAI;
         }
-      }
 
       if(this.state.updateItemId==0){
         result= await this.spService.saveListItem(this.props.listName,formData);
         if(result){
           itemId=result.Id;
-          //await this.sendEmail(to,"", formData.APPROVAL_x0020_STATUS,this.state.currentUser.Title,result.Id,nextApproverName);
+
+          let cc:any="";
+          if(formData.Notification1 !="" && formData.Notification1 !=null) cc+=formData.Notification1+";";
+          if(formData.Notification2 !="" && formData.Notification2 !=null) cc+=formData.Notification2+";";
+          if(formData.Notification3 !="" && formData.Notification3 !=null) cc+=formData.Notification3+";";
+          await this.sendEmail(to,cc, formData.APPROVAL_x0020_STATUS,this.state.currentUser.Title,result.Id,nextApproverName);
           this.setState({itemId:result.Id});
         } 
       }
@@ -368,8 +370,6 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
         if(typeof formData.INCO_x0020_TERMS == "object") formData.INCO_x0020_TERMS=formData.INCO_x0020_TERMS.length>0 ? formData.INCO_x0020_TERMS[0].value:"";
         if(typeof formData.PAYMENT_x0020_TERMS == "object") formData.PAYMENT_x0020_TERMS=formData.PAYMENT_x0020_TERMS.length>0 ? formData.PAYMENT_x0020_TERMS[0].value:"";
         if(typeof formData.NATURE_x0020_OF_x0020_PURCHASE == "object") formData.NATURE_x0020_OF_x0020_PURCHASE=formData.NATURE_x0020_OF_x0020_PURCHASE.length>0 ? formData.NATURE_x0020_OF_x0020_PURCHASE[0].value:"";
-      
- 
 
         if(this.state.RequesterComments!=""){
           let requestCommentObj:any=[];
@@ -383,7 +383,13 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
 
         itemId=this.state.updateItemId;
         result=await this.spService.updateListItem(this.props.listName,formData,this.state.updateItemId);
-        //await this.sendEmail(to,"", formData.APPROVAL_x0020_STATUS,"",this.state.updateItemId,nextApproverName);
+
+        let cc:any="";
+        if(this.state.existingItem[0].Notification1 !="" && this.state.existingItem[0].Notification1 !=null) cc+=this.state.existingItem[0].Notification1+";";
+        if(this.state.existingItem[0].Notification2 !="" && this.state.existingItem[0].Notification2 !=null) cc+=this.state.existingItem[0].Notification2+";";
+        if(this.state.existingItem[0].Notification3 !="" && this.state.existingItem[0].Notification3 !=null) cc+=this.state.existingItem[0].Notification3+";";
+
+        await this.sendEmail(to,cc, formData.APPROVAL_x0020_STATUS,"",this.state.updateItemId,nextApproverName);
       }
 
       if(result){
@@ -408,300 +414,57 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
     }
   }
 
-  public async getWorkflowAction(){
-    let approverObj:any={
-      VerifierName:"",
-      VerifierEmailID:"",
-      TerritoryOfficerName:"",
-      TerritoryOfficerEmailID:"",
-      MDMName:"",
-      MDMEmailID:"",
-      ABFLawyerName:"",
-      ABFLawyerEmailID:"",
-      BankApprover:"",
-      BankApproverEmailId:"" 
-    };
+  public async onEntryLevel2Save(){
+    let errorcontrol:any="";
+    if(this.state.formData.OCN_x0020_SELLING_x0020_PRICE== null || this.state.formData.OCN_x0020_SELLING_x0020_PRICE== "") errorcontrol+="OCN SELLING PRICE,";
+    if(this.state.formData.MARGIN== null || this.state.formData.MARGIN== "") errorcontrol+="MARGIN,";
+    if(this.state.formData.MARGIN_x0020_PERCENTAGE== null || this.state.formData.MARGIN_x0020_PERCENTAGE== "") errorcontrol+="MARGIN PERCENTAGE,";
+     
+    if(errorcontrol=="")
+    {
+      let tempformData:any={};
+      tempformData["OCN_x0020_SELLING_x0020_PRICE"]=""+this.state.formData["OCN_x0020_SELLING_x0020_PRICE"];
+      tempformData["MARGIN"]=""+this.state.formData["MARGIN"];
+      tempformData["MARGIN_x0020_PERCENTAGE"]=""+this.state.formData["MARGIN_x0020_PERCENTAGE"];
+      await this.spService.updateListItem(this.props.listName,tempformData ,this.state.updateItemId);
+      this.setState({approveRejectAction:"Approved"},this.onApproveReject);
+    }else{
+        this.setState({hideErroDialog:false,errorMessage:errorcontrol,showErrorBorder:true });
+    }
+  }
 
-    switch(this.state.formData.SELECT_x0020_MASTER_x0020_TO_x00){
-      case "NEW VENDOR REQUEST":
-      case "UPDATE EXISTING VENDOR":
-      {
-        let filterCondition:any="";
-          if(this.state.formData.ANY_x0020_RED_x0020_FLAGS == "YES"){
-              filterCondition="RED FLAG NEW VENDOR REQUEST";
-          }else if(this.state.formData.ABC_x0020_3RD_x0020_PARTY_x0020_ == "MEDIUM RISK" || this.state.formData.ABC_x0020_3RD_x0020_PARTY_x0020_ == "HIGH RISK"){
-              filterCondition="ABC RISK NEW VENDOR REQUEST";
-          }else if(this.state.formData.COMPANY_x0020_LIST =="ABVI-AB MAURI INDIA PVT LTD VISTA DIVISION"){
-              filterCondition="VISTA";
-          }else
-              filterCondition="NEW VENDOR REQUEST";
+  public async getWorkflowAction(formData:any){
+    let SPAApprovers:any=await this.spService.getListItem(ListTitles.SPAApprovers,"*","","");
+    let condition:any="";
 
-          let ReviewersMasterList:any=await this.spService.getListItem(ListTitles.ReviewersMasterList,"","",`Title eq '${filterCondition}'`);
-          if(ReviewersMasterList!=null && ReviewersMasterList.length>0)
-          {
-            approverObj["VerifierName"]=ReviewersMasterList[0]["VerifierName"];
-            approverObj["VerifierEmailID"]=ReviewersMasterList[0]["VerifierEmailID"];
-            approverObj["TerritoryOfficerName"]=ReviewersMasterList[0]["TerritoryOfficerName"];
-            approverObj["TerritoryOfficerEmailID"]=ReviewersMasterList[0]["TerritoryOfficerEmailID"];
-            approverObj["MDMName"]=ReviewersMasterList[0]["MDMName"];
-            approverObj["MDMEmailID"]=ReviewersMasterList[0]["MDMEmailID"];
-            approverObj["ABFLawyerName"]=ReviewersMasterList[0]["ABFLawyerName"];
-            approverObj["ABFLawyerEmailID"]=ReviewersMasterList[0]["ABFLawyerEmailID"];
-          }
-      }
-      break;
-
-      case "UPDATE EXISTING VENDOR BANK DETAILS": {
-        let filterCondition:any="";
-        filterCondition="UPDATE EXISTING VENDOR BANK DETAILS";
-
-        let BankLevel1ApproverMaster:any=await this.spService.getListItem(ListTitles.BankLevel1ApproverMaster,"","",`Title eq '${this.state.formData.BANK_x0020_LOCATION}'`);
-        if(BankLevel1ApproverMaster!=null && BankLevel1ApproverMaster.length>0)
-        {
-          approverObj["BankApprover"]=BankLevel1ApproverMaster[0]["BANKLEVEL1APPROVER"];
-          approverObj["BankApproverEmailId"]=BankLevel1ApproverMaster[0]["EMAILIDBANKLEVEL1"];
-        }
-
-        let ReviewersMasterList:any=await this.spService.getListItem(ListTitles.ReviewersMasterList,"","",`Title eq '${filterCondition}'`);
-        if(ReviewersMasterList!=null && ReviewersMasterList.length>0)
-        {
-          approverObj["VerifierName"]=ReviewersMasterList[0]["VerifierName"];
-          approverObj["VerifierEmailID"]=ReviewersMasterList[0]["VerifierEmailID"];
-
-          approverObj["TerritoryOfficerName"]=ReviewersMasterList[0]["TerritoryOfficerName"];
-          approverObj["TerritoryOfficerEmailID"]=ReviewersMasterList[0]["TerritoryOfficerEmailID"];
-          approverObj["MDMName"]=ReviewersMasterList[0]["MDMName"];
-          approverObj["MDMEmailID"]=ReviewersMasterList[0]["MDMEmailID"];
-          approverObj["ABFLawyerName"]=ReviewersMasterList[0]["ABFLawyerName"];
-          approverObj["ABFLawyerEmailID"]=ReviewersMasterList[0]["ABFLawyerEmailID"];
-        }
-      }
-      break;
- 
-      case "BLOCK/UNBLOCK VENDOR": {
-          let filterCondition:any="";
-          switch(this.state.formData.BUSINESS_x0020_GROUP){
-            case "MAURI - YEAST": filterCondition="MAURI - YEAST UNBLOCK VENDOR";
-            break;
-
-            case "MAURI - BI":filterCondition="MAURI - BI UNBLOCK VENDOR";
-            break;
-
-            case "MAURI - SPICES":filterCondition="MAURI - SPICES UNBLOCK VENDOR";
-            break;
-
-            case "AB VISTA":filterCondition="AB VISTA UNBLOCK VENDOR";
-            break;
-          }
-          let ReviewersMasterList:any=await this.spService.getListItem(ListTitles.ReviewersMasterList,"","",`Title eq '${filterCondition}'`);
-          if(ReviewersMasterList!=null && ReviewersMasterList.length>0)
-          {
-            approverObj["VerifierName"]=ReviewersMasterList[0]["VerifierName"];
-            approverObj["VerifierEmailID"]=ReviewersMasterList[0]["VerifierEmailID"];
-            approverObj["TerritoryOfficerName"]=ReviewersMasterList[0]["TerritoryOfficerName"];
-            approverObj["TerritoryOfficerEmailID"]=ReviewersMasterList[0]["TerritoryOfficerEmailID"];
-            approverObj["MDMName"]=ReviewersMasterList[0]["MDMName"];
-            approverObj["MDMEmailID"]=ReviewersMasterList[0]["MDMEmailID"];
-            approverObj["ABFLawyerName"]=ReviewersMasterList[0]["ABFLawyerName"];
-            approverObj["ABFLawyerEmailID"]=ReviewersMasterList[0]["ABFLawyerEmailID"];
-          }
-      }
-      break;
-
-      case "NEW CUSTOMER REQUEST": {
-          let filterCondition:any="";
-          if(this.state.formData.ANY_x0020_RED_x0020_FLAGS == "YES"){
-              filterCondition="RED FLAG NEW CUSTOMER REQUEST";
-          }else
-              filterCondition="NEW CUSTOMER REQUEST";
-
-          let ReviewersMasterList:any=await this.spService.getListItem(ListTitles.ReviewersMasterList,"","",`Title eq '${filterCondition}'`);
-          if(ReviewersMasterList!=null && ReviewersMasterList.length>0)
-          {
-            approverObj["VerifierName"]=ReviewersMasterList[0]["VerifierName"];
-            approverObj["VerifierEmailID"]=ReviewersMasterList[0]["VerifierEmailID"];
-            approverObj["TerritoryOfficerName"]=ReviewersMasterList[0]["TerritoryOfficerName"];
-            approverObj["TerritoryOfficerEmailID"]=ReviewersMasterList[0]["TerritoryOfficerEmailID"];
-            approverObj["MDMName"]=ReviewersMasterList[0]["MDMName"];
-            approverObj["MDMEmailID"]=ReviewersMasterList[0]["MDMEmailID"];
-            approverObj["ABFLawyerName"]=ReviewersMasterList[0]["ABFLawyerName"];
-            approverObj["ABFLawyerEmailID"]=ReviewersMasterList[0]["ABFLawyerEmailID"];
-          }
-      }
-      break;
-
-      case "UPDATE EXISTING CUSTOMER": {
-          let filterCondition:any="";
-          filterCondition="UPDATE EXISTING CUSTOMER";
-
-          let ReviewersMasterList:any=await this.spService.getListItem(ListTitles.ReviewersMasterList,"","",`Title eq '${filterCondition}'`);
-          if(ReviewersMasterList!=null && ReviewersMasterList.length>0)
-          {
-            approverObj["VerifierName"]=ReviewersMasterList[0]["VerifierName"];
-            approverObj["VerifierEmailID"]=ReviewersMasterList[0]["VerifierEmailID"];
-            approverObj["TerritoryOfficerName"]=ReviewersMasterList[0]["TerritoryOfficerName"];
-            approverObj["TerritoryOfficerEmailID"]=ReviewersMasterList[0]["TerritoryOfficerEmailID"];
-            approverObj["MDMName"]=ReviewersMasterList[0]["MDMName"];
-            approverObj["MDMEmailID"]=ReviewersMasterList[0]["MDMEmailID"];
-            approverObj["ABFLawyerName"]=ReviewersMasterList[0]["ABFLawyerName"];
-            approverObj["ABFLawyerEmailID"]=ReviewersMasterList[0]["ABFLawyerEmailID"];
-          }
-      }
-      break;
-
-      case "BLOCK/UNBLOCK CUSTOMER": {
-          let filterCondition:any="";
-          switch(this.state.formData.BUSINESS_x0020_GROUP){
-            case "MAURI - YEAST": filterCondition="MAURI - YEAST UNBLOCK";
-            break;
-
-            case "MAURI - BI":filterCondition="MAURI - BI UNBLOCK";
-            break;
-
-            case "MAURI - SPICES":filterCondition="MAURI - SPICES UNBLOCK";
-            break;
-
-            case "AB VISTA":filterCondition="AB VISTA UNBLOCK";
-            break;
-          }
-          let ReviewersMasterList:any=await this.spService.getListItem(ListTitles.ReviewersMasterList,"","",`Title eq '${filterCondition}'`);
-          if(ReviewersMasterList!=null && ReviewersMasterList.length>0)
-          {
-            approverObj["VerifierName"]=ReviewersMasterList[0]["VerifierName"];
-            approverObj["VerifierEmailID"]=ReviewersMasterList[0]["VerifierEmailID"];
-            approverObj["TerritoryOfficerName"]=ReviewersMasterList[0]["TerritoryOfficerName"];
-            approverObj["TerritoryOfficerEmailID"]=ReviewersMasterList[0]["TerritoryOfficerEmailID"];
-            approverObj["MDMName"]=ReviewersMasterList[0]["MDMName"];
-            approverObj["MDMEmailID"]=ReviewersMasterList[0]["MDMEmailID"];
-            approverObj["ABFLawyerName"]=ReviewersMasterList[0]["ABFLawyerName"];
-            approverObj["ABFLawyerEmailID"]=ReviewersMasterList[0]["ABFLawyerEmailID"];
-          }
-      }
-      break;
-
-      case "PRICE UPDATE": {
-        let filterCondition:any="";
-          switch(this.state.formData.BUSINESS_x0020_GROUP){
-            case "MAURI - YEAST": filterCondition="MAURI - YEAST PRICE UPDATE";
-            break;
-
-            case "MAURI - BI":filterCondition="MAURI - BI PRICE UPDATE";
-            break;
-
-            case "MAURI - SPICES":filterCondition="MAURI - SPICES PRICE UPDATE";
-            break;
-
-            case "AB VISTA":filterCondition="AB VISTA PRICE UPDATE";
-            break;
-          }
-          let ReviewersMasterList:any=await this.spService.getListItem(ListTitles.ReviewersMasterList,"","",`Title eq '${filterCondition}'`);
-          if(ReviewersMasterList!=null && ReviewersMasterList.length>0)
-          {
-            approverObj["VerifierName"]=ReviewersMasterList[0]["VerifierName"];
-            approverObj["VerifierEmailID"]=ReviewersMasterList[0]["VerifierEmailID"];
-            approverObj["TerritoryOfficerName"]=ReviewersMasterList[0]["TerritoryOfficerName"];
-            approverObj["TerritoryOfficerEmailID"]=ReviewersMasterList[0]["TerritoryOfficerEmailID"];
-            approverObj["MDMName"]=ReviewersMasterList[0]["MDMName"];
-            approverObj["MDMEmailID"]=ReviewersMasterList[0]["MDMEmailID"];
-            approverObj["ABFLawyerName"]=ReviewersMasterList[0]["ABFLawyerName"];
-            approverObj["ABFLawyerEmailID"]=ReviewersMasterList[0]["ABFLawyerEmailID"];
-          }
-      }
-      break; 
-
-      case "CREDIT LIMIT ENHANCEMENT": {
-          let filterCondition:any="";
-          switch(this.state.formData.BUSINESS_x0020_GROUP){
-            case "MAURI - YEAST": filterCondition="MAURI - YEAST CR LIMIT ENHANCEMENT";
-            break;
-
-            case "MAURI - BI":filterCondition="MAURI - BI CR LIMIT ENHANCEMENT";
-            break;
-
-            case "MAURI - SPICES":filterCondition="MAURI - SPICES CR LIMIT ENHANCEMENT";
-            break;
-
-            case "AB VISTA":filterCondition="AB VISTA CR LIMIT ENHANCEMENT";
-            break;
-          }
-          let ReviewersMasterList:any=await this.spService.getListItem(ListTitles.ReviewersMasterList,"","",`Title eq '${filterCondition}'`);
-          if(ReviewersMasterList!=null && ReviewersMasterList.length>0)
-          {
-            approverObj["VerifierName"]=ReviewersMasterList[0]["VerifierName"];
-            approverObj["VerifierEmailID"]=ReviewersMasterList[0]["VerifierEmailID"];
-            approverObj["TerritoryOfficerName"]=ReviewersMasterList[0]["TerritoryOfficerName"];
-            approverObj["TerritoryOfficerEmailID"]=ReviewersMasterList[0]["TerritoryOfficerEmailID"];
-            approverObj["MDMName"]=ReviewersMasterList[0]["MDMName"];
-            approverObj["MDMEmailID"]=ReviewersMasterList[0]["MDMEmailID"];
-            approverObj["ABFLawyerName"]=ReviewersMasterList[0]["ABFLawyerName"];
-            approverObj["ABFLawyerEmailID"]=ReviewersMasterList[0]["ABFLawyerEmailID"];
-          }
-      }
-      break;
-
-      case "NEW EMPLOYEE REQUEST": {
-          let filterCondition:any="";
-          filterCondition="NEW EMPLOYEE REQUEST";
-
-          let ReviewersMasterList:any=await this.spService.getListItem(ListTitles.ReviewersMasterList,"","",`Title eq '${filterCondition}'`);
-          if(ReviewersMasterList!=null && ReviewersMasterList.length>0)
-          {
-            approverObj["VerifierName"]=ReviewersMasterList[0]["VerifierName"];
-            approverObj["VerifierEmailID"]=ReviewersMasterList[0]["VerifierEmailID"];
-            approverObj["TerritoryOfficerName"]=ReviewersMasterList[0]["TerritoryOfficerName"];
-            approverObj["TerritoryOfficerEmailID"]=ReviewersMasterList[0]["TerritoryOfficerEmailID"];
-            approverObj["MDMName"]=ReviewersMasterList[0]["MDMName"];
-            approverObj["MDMEmailID"]=ReviewersMasterList[0]["MDMEmailID"];
-            approverObj["ABFLawyerName"]=ReviewersMasterList[0]["ABFLawyerName"];
-            approverObj["ABFLawyerEmailID"]=ReviewersMasterList[0]["ABFLawyerEmailID"];
-          }
-      }
-      break;
-
-      case "NEW ITEM REQUEST": {
-        let filterCondition:any="";
-        if( this.state.formData.ITEM_x0020_TYPE == "OTHER SERVICES"){
-          filterCondition="OTHER SERVICES";
-        }else if(this.state.formData.ITEM_x0020_TYPE == "CWIP AND FA"){
-          filterCondition="CWIP AND FA";
-        }else{
-          if(this.state.formData.ITEM_x0020_GROUP == "IG006-SPICES"){
-             filterCondition="IG SPICES";
-          }else {
-            if(this.state.formData.PROFIT_x0020_CENTRE=="BI"){
-              filterCondition="IG PF BI";
-            }else if(this.state.formData.PROFIT_x0020_CENTRE=="YEAST"){
-              filterCondition="IG PF YEAST";
-            }else if(this.state.formData.PROFIT_x0020_CENTRE=="IB"){
-              filterCondition="IG PF IB";
-            }else if(this.state.formData.PROFIT_x0020_CENTRE=="NEA"){
-              filterCondition="IG PF NEA";
-            }else if(this.state.formData.PROFIT_x0020_CENTRE=="SEA"){
-              filterCondition="IG PF SEA";
-            }else
-              filterCondition="IG PG Other";
-          }
-        }
-           
-
-        let ReviewersMasterList:any=await this.spService.getListItem(ListTitles.ReviewersMasterList,"","",`Title eq '${filterCondition}'`);
-        if(ReviewersMasterList!=null && ReviewersMasterList.length>0)
-        {
-          approverObj["VerifierName"]=ReviewersMasterList[0]["VerifierName"];
-          approverObj["VerifierEmailID"]=ReviewersMasterList[0]["VerifierEmailID"];
-          approverObj["TerritoryOfficerName"]=ReviewersMasterList[0]["TerritoryOfficerName"];
-          approverObj["TerritoryOfficerEmailID"]=ReviewersMasterList[0]["TerritoryOfficerEmailID"];
-          approverObj["MDMName"]=ReviewersMasterList[0]["MDMName"];
-          approverObj["MDMEmailID"]=ReviewersMasterList[0]["MDMEmailID"];
-          approverObj["ABFLawyerName"]=ReviewersMasterList[0]["ABFLawyerName"];
-          approverObj["ABFLawyerEmailID"]=ReviewersMasterList[0]["ABFLawyerEmailID"];
-        }
-
-      }
-      break;
+    if(this.state.formData.CHILLI_x0020_RELATED_x0020_PURCH == "YES"){
+      condition="Chilli Related Purchase";
+      formData.APPROVAL_x0020_STATUS= WorkFlowStatus.WAITINGFORPROCUREMENTLEADAPPROVAL;
+    }else{
+      formData.APPROVAL_x0020_STATUS= WorkFlowStatus.WAITINGFORAPPROVAL1;
+      if(parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)<=1000000) condition="≤ 10,00,000"; 
+      else if(parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)>1000000 && parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)<=4000000) condition="> 10,00,000 and ≤ 40,00,000";
+      else if(parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)>4000000 && parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)<=16000000) condition="> 40,00,000 and ≤ 1.6 Crore";
+      else if(parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)>16000000 && parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)<=40000000) condition="> 1.6 Crore and ≤ 4 Crore";
+      else if(parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)>40000000 && parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)<=80000000) condition="> 40,00,000 and ≤ 1.6 Crore";
+      else if(parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)>80000000 ) condition="8 Crore";
     }
 
-    return approverObj;
+    if(formData.ENTEY_x0020_LEVEL2_x0020_REQUIRE =="YES")
+      formData.APPROVAL_x0020_STATUS= WorkFlowStatus.ENTRYLEVEL1COMPLETEDWAITINGFORENTRYLEVEL2;
+
+    let approvers:any=SPAApprovers.filter((x:any)=>x.Title == condition);
+      if(approvers!=null && approvers.length>0){
+        formData["APPROVER_x0020_LEVEL1_x0020_NAME"]=approvers[0]["Approver1Name"];
+        formData["APPROVER_x0020_LEVEL1_x0020_EMAI"]=approvers[0]["Approver1Email"];
+        formData["APPROVER_x0020_LEVEL2_x0020_NAME"]=approvers[0]["Approver2Name"];
+        formData["APPROVER_x0020_LEVEL2_x0020_EMAI"]=approvers[0]["Approver2Email"];
+        formData["APPROVER_x0020_LEVEL3_x0020_NAME"]=approvers[0]["Approver3Name"];
+        formData["APPROVER_x0020_LEVEL3_x0020_EMAI"]=approvers[0]["Approver3Email"];
+        formData["Notification1"]=approvers[0]["Notification1"];
+        formData["Notification2"]=approvers[0]["Notification2"];
+        formData["Notification3"]=approvers[0]["Notification3"]; 
+      }
   }
 
   public onDeleteAttachment(item:any){
@@ -729,9 +492,6 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
     if(this.state.formData.OCN_x0020_NUMBER== null || this.state.formData.OCN_x0020_NUMBER== "") errorcontrol+="OCN NUMBER,";
     if(this.state.formData.OCN_x0020_DATE== null || this.state.formData.OCN_x0020_DATE== "") errorcontrol+="OCN DATE,";
     if(this.state.formData.SHIPMENT== null || this.state.formData.SHIPMENT== "") errorcontrol+="SHIPMENT,";
-    if(this.state.formData.OCN_x0020_SELLING_x0020_PRICE== null || this.state.formData.OCN_x0020_SELLING_x0020_PRICE== "") errorcontrol+="OCN SELLING PRICE,";
-    //if(this.state.formData.MARGIN== null || this.state.formData.MARGIN== "") errorcontrol+="MARGIN,";
-    //if(this.state.formData.MARGIN_x0020_PERCENTAGE== null || this.state.formData.MARGIN_x0020_PERCENTAGE== "") errorcontrol+="MARGIN PERCENTAGE,";
     if(this.state.formData.RM_x0020_ARRIVAL_x0020_DATE== null || this.state.formData.RM_x0020_ARRIVAL_x0020_DATE== "") errorcontrol+="RM ARRIVAL DATE,";
     if(this.state.formData.LEAD_x0020_TIME== null || this.state.formData.LEAD_x0020_TIME== "") errorcontrol+="LEAD TIME,";
     if(this.state.formData.FINAL_x0020_PRICE== null || this.state.formData.FINAL_x0020_PRICE== "") errorcontrol+="FINAL PRICE,";
@@ -749,11 +509,15 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
     if(this.state.formData.PAYMENT_x0020_TERMS== null || this.state.formData.PAYMENT_x0020_TERMS== "") errorcontrol+="PAYMENT TERMS,";
     if(this.state.formData.NATURE_x0020_OF_x0020_PURCHASE== null || this.state.formData.NATURE_x0020_OF_x0020_PURCHASE== "") errorcontrol+="NATURE OF PURCHASE,";
     if(this.state.formData.CURRENCY== null || this.state.formData.CURRENCY== "") errorcontrol+="CURRENCY,";
-     if(this.state.formData.REFERENCE_x0020_NUMBER== null || this.state.formData.REFERENCE_x0020_NUMBER== "") errorcontrol+="REFERENCE NUMBER,";
+    if(this.state.formData.REFERENCE_x0020_NUMBER== null || this.state.formData.REFERENCE_x0020_NUMBER== "") errorcontrol+="REFERENCE NUMBER,";
     if(this.state.formData.CHILLI_x0020_RELATED_x0020_PURCH== null || this.state.formData.CHILLI_x0020_RELATED_x0020_PURCH== "") errorcontrol+="CHILLI RELATED PURCHSE,";
     if(this.state.formData.TEMPLATE_x0020_TYPE=="RM TEMPLATE" && this.state.formData.ENTEY_x0020_LEVEL2_x0020_REQUIRE =="") errorcontrol+="ENTEY LEVEL2 REQUIRED";
 
-    if(this.state.existingItem.length>0 && this.state.existingItem[0]["APPROVAL_x0020_STATUS"].indexOf("Reject")!=-1){
+    if(parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)>80000000 ){
+       if (this.state.filePickerResult ==null || this.state.filePickerResult.length == 0) errorcontrol+="ABF pre-approval email attachment required.";
+    }
+
+    if(this.state.existingItem.length>0 && this.state.existingItem[0]["APPROVAL_x0020_STATUS"].toLowerCase().indexOf("reject")!=-1){
       if(this.state.RequesterComments==""){
         errorcontrol+="Requester Comments";
       }
@@ -765,152 +529,100 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
   public async onApproveRejectClick(action:any){
     this.setState({hideApproveRejectDig:false,approveRejectAction:action})
   }
-
-  public async onApproveReject(){}
-  /*public async onApproveReject(){
+ 
+  public async onApproveReject(){
     if(this.state.updateItemId!=0){
-      if((this.state.approveRejectAction == "Reject" && (this.state.ApprovalComments!=null && this.state.ApprovalComments!="")) ||
-        (this.state.approveRejectAction == "Approved" && this.state.existingItem[0].APPROVAL_x0020_STATUS !=  WorkFlowStatus.WaitingforMDMCreation) || 
-        (this.state.approveRejectAction == "Approved" && this.state.existingItem[0].APPROVAL_x0020_STATUS ==  WorkFlowStatus.WaitingforMDMCreation && (this.state.formData.AX_x0020_CUSTOMER_x0020_CODE!=null && this.state.formData.AX_x0020_CUSTOMER_x0020_CODE!=""))){
+      if((this.state.approveRejectAction == "Reject" && (this.state.ApprovalComments!=null && this.state.ApprovalComments!="")) || this.state.approveRejectAction == "Approved"){
         this.setState({loading:true,hideApproveRejectDig:true});
 
         let formData:any={},to:any="",nextApproverName:any="";
- 
+   
         switch(this.state.existingItem[0].APPROVAL_x0020_STATUS){
-          case WorkFlowStatus.WaitingForBankChangesPlantReview:{
-                
-                if(this.state.approveRejectAction =="Reject"){
-                  formData.APPROVAL_x0020_STATUS=WorkFlowStatus.RejectedByBankChangesPlantReviewer;
-                  to=this.state.existingItem[0].Author.EMail;
-                  nextApproverName=this.state.existingItem[0].Author.Title;
-                } else {
-                  formData.APPROVAL_x0020_STATUS=WorkFlowStatus.WaitingForVerifierReview;
-                  to=this.state.existingItem[0].EMAIL_x0020_ID_x0020_BANK_x0020_;
-                  nextApproverName=this.state.existingItem[0].BANK_x0020_LEVEL1_x0020_APPROVER;
-                }
-
-                formData.BANKLEVEL1Date=Helper.currentDate();
-                formData.BANKLEVEL1ApproverComment=this.state.ApprovalComments; 
+          case WorkFlowStatus.ENTRYLEVEL1COMPLETEDWAITINGFORENTRYLEVEL2 :{
+              formData.APPROVAL_x0020_STATUS=WorkFlowStatus.WAITINGFORAPPROVAL1;
+              to=this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_EMAI;
+              nextApproverName=this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_NAME;
+              formData.APPROVER1_x0020_COMMENTS=this.state.ApprovalComments;
           }
-          break;
+          break; 
 
-          case WorkFlowStatus.WaitingForVerifierReview:{
-                
-                if(this.state.approveRejectAction =="Reject"){
-                    formData.APPROVAL_x0020_STATUS=WorkFlowStatus.RejectedByVerifier;
-                    to=this.state.existingItem[0].Author.EMail;
-                    nextApproverName=this.state.existingItem[0].Author.Title;
-                }else if((this.state.existingItem[0].TERRITORY_x0020_OFFICER_x0020_EM != "" && this.state.existingItem[0].TERRITORY_x0020_OFFICER_x0020_EM != null && this.state.existingItem[0].TERRITORY_x0020_OFFICER_x0020_EM != "NA") &&
-                         (this.state.existingItem[0].ABFL_x0020_EMAIL_x0020_ID != "" && this.state.existingItem[0].ABFL_x0020_EMAIL_x0020_ID != null && this.state.existingItem[0].ABFL_x0020_EMAIL_x0020_ID != "NA")){
-                  formData.APPROVAL_x0020_STATUS= WorkFlowStatus.WaitingForTerritoryOfficerAndABFLReview;
-                  to=this.state.existingItem[0].TERRITORY_x0020_OFFICER_x0020_EM+";"+this.state.existingItem[0].ABFL_x0020_EMAIL_x0020_ID;
-                  nextApproverName=this.state.existingItem[0].TERRITORY_x0020_OFFICER_x0020_NA+","+this.state.existingItem[0].ABF_x0020_LAWYER;
-                }
-                else if(this.state.existingItem[0].TERRITORY_x0020_OFFICER_x0020_EM != "" && this.state.existingItem[0].TERRITORY_x0020_OFFICER_x0020_EM != null && this.state.existingItem[0].TERRITORY_x0020_OFFICER_x0020_EM != "NA"){
-                  formData.APPROVAL_x0020_STATUS= WorkFlowStatus.WaitingForTerritoryOfficerReview;
-                  to= this.state.existingItem[0].TERRITORY_x0020_OFFICER_x0020_EM;
-                  nextApproverName=this.state.existingItem[0].TERRITORY_x0020_OFFICER_x0020_NA;
-                }else if(this.state.existingItem[0].ABFL_x0020_EMAIL_x0020_ID != "" && this.state.existingItem[0].ABFL_x0020_EMAIL_x0020_ID != null && this.state.existingItem[0].ABFL_x0020_EMAIL_x0020_ID != "NA"){
-                  formData.APPROVAL_x0020_STATUS=WorkFlowStatus.ABFLAPPROVED;
-                  to=this.state.existingItem[0].ABFL_x0020_EMAIL_x0020_ID;
-                   nextApproverName=this.state.existingItem[0].ABF_x0020_LAWYER;
-                }else {
-                  formData.APPROVAL_x0020_STATUS=WorkFlowStatus.WaitingforMDMCreation;
-                  to= this.state.existingItem[0].MDM_x0020_EMAIL_x0020_ID;
-                  nextApproverName=this.state.existingItem[0].NAME_x0020_OF_x0020_MDM;
-                }
-
-                formData.VERIFIED_x0020_DATE=Helper.currentDate();
-                if(this.state.approveRejectAction == "Reject")
-                  formData.VERIFIER_x0020_REASON_x0020_FOR_=this.state.ApprovalComments;
-                else
-                  formData.COMMENTS_x0020_FOR_x0020_VERIFIE=this.state.ApprovalComments;
-          }
-          break;
-
-          case WorkFlowStatus.WaitingForTerritoryOfficerReview:{
-             if(this.state.approveRejectAction =="Reject"){
-                    formData.APPROVAL_x0020_STATUS=WorkFlowStatus.RejectedByTerritoryOfficer;
-                    to=this.state.existingItem[0].Author.EMail;
-                    nextApproverName=this.state.existingItem[0].Author.Title;
-                }else if((this.state.existingItem[0].TERRITORY_x0020_OFFICER_x0020_EM != "" && this.state.existingItem[0].TERRITORY_x0020_OFFICER_x0020_EM != null && this.state.existingItem[0].TERRITORY_x0020_OFFICER_x0020_EM != "NA") &&
-                         (this.state.existingItem[0].ABFL_x0020_EMAIL_x0020_ID != "" && this.state.existingItem[0].ABFL_x0020_EMAIL_x0020_ID != null && this.state.existingItem[0].ABFL_x0020_EMAIL_x0020_ID != "NA")){
-                  formData.APPROVAL_x0020_STATUS= WorkFlowStatus.WaitingForTerritoryOfficerAndABFLReview;
-                  to=this.state.existingItem[0].TERRITORY_x0020_OFFICER_x0020_EM+";"+this.state.existingItem[0].ABFL_x0020_EMAIL_x0020_ID;
-                  nextApproverName=this.state.existingItem[0].TERRITORY_x0020_OFFICER_x0020_NA+","+this.state.existingItem[0].ABF_x0020_LAWYER;
-                }else {
-                  formData.APPROVAL_x0020_STATUS=WorkFlowStatus.WaitingforMDMCreation;
-                  to= this.state.existingItem[0].MDM_x0020_EMAIL_x0020_ID;
-                  nextApproverName=this.state.existingItem[0].NAME_x0020_OF_x0020_MDM;
-                }
-
-                formData.TERRITORY_x0020_OFFICER_x0020_RE=Helper.currentDate();
-                if(this.state.approveRejectAction == "Reject")
-                  formData.TERRITORY_x0020_OFFICER_x0020_RE0=this.state.ApprovalComments;
-                else
-                  formData.COMMENTS_x0020_FOR_x0020_TERRITO=this.state.ApprovalComments;
-
-          }
-          break;
-
-          case WorkFlowStatus.WaitingForTerritoryOfficerAndABFLReview:{ 
+          case WorkFlowStatus.WAITINGFORPROCUREMENTLEADAPPROVAL:{
             if(this.state.approveRejectAction =="Reject"){
+              formData.APPROVAL_x0020_STATUS=WorkFlowStatus.PLREJECTED;
               to=this.state.existingItem[0].Author.EMail;
               nextApproverName=this.state.existingItem[0].Author.Title;
-              if(this.state.existingItem[0].TERRITORY_x0020_OFFICER_x0020_EM.toLowerCase()==this.state.currentUser.Email.toLowerCase())
-                {
-                  formData.APPROVAL_x0020_STATUS=WorkFlowStatus.RejectedByTerritoryOfficer;
-                  formData.TERRITORY_x0020_OFFICER_x0020_RE0=this.state.ApprovalComments;
-                  formData.TERRITORY_x0020_OFFICER_x0020_RE=Helper.currentDate();
-                }else{
-                  formData.APPROVAL_x0020_STATUS=WorkFlowStatus.RejectedByABFL;
-                  formData.ABFL_x0020_REASON_x0020_FOR_x002=this.state.ApprovalComments;
-                  formData.ABFL_x0020_APPROVED_x0020_DATE=Helper.currentDate();
-                } 
-              }else {
+              formData.PL_x0020_REASON_x0020_FOR_x0020_=this.state.ApprovalComments;
+            } else {
+              formData.APPROVAL_x0020_STATUS=WorkFlowStatus.PROCUREMENTAPPROVALCOMPLETED;
+              to=this.state.existingItem[0].Author.EMail;
+              nextApproverName=this.state.existingItem[0].Author.Title;
+              formData.PL_x0020_COMMENTS=this.state.ApprovalComments;
+            }
+          }
+          break;
 
-                 
-                if(this.state.existingItem[0].TERRITORY_x0020_OFFICER_x0020_EM.toLowerCase()==this.state.currentUser.Email.toLowerCase()){
-                  formData.COMMENTS_x0020_FOR_x0020_TERRITO=this.state.ApprovalComments;
-                  formData.TERRITORY_x0020_OFFICER_x0020_RE=Helper.currentDate();
-                }
-                else{
-                  formData.ABFL_x0020_APPROVED_x0020_DATE=Helper.currentDate();
-                  formData.ABFL_x0020_COMMENTS=this.state.ApprovalComments;
-                }
-
-                if(this.state.existingItem[0].TERRITORY_x0020_OFFICER_x0020_RE!=null || this.state.existingItem[0].ABFL_x0020_APPROVED_x0020_DATE!=null)
-                {
-                  formData.APPROVAL_x0020_STATUS=WorkFlowStatus.WaitingforMDMCreation;
-                  to= this.state.existingItem[0].MDM_x0020_EMAIL_x0020_ID;
-                  nextApproverName=this.state.existingItem[0].NAME_x0020_OF_x0020_MDM;
-                } 
+          case WorkFlowStatus.WAITINGFORAPPROVAL1:{
+            if(this.state.approveRejectAction =="Reject"){
+              formData.APPROVAL_x0020_STATUS=WorkFlowStatus.APPROVER1REJECTED;
+              to=this.state.existingItem[0].Author.EMail;
+              nextApproverName=this.state.existingItem[0].Author.Title;
+              formData.APPROVER1_x0020_REASON_x0020_FOR=this.state.ApprovalComments;
+            } else {
+              if(this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_EMAI!="" && this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_EMAI!=null){
+                formData.APPROVAL_x0020_STATUS=WorkFlowStatus.WAITINGFORAPPROVAL2;
+                to=this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_EMAI;
+                nextApproverName=this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_NAME;
+                formData.APPROVER1_x0020_COMMENTS=this.state.ApprovalComments;
+              }else{
+                formData.APPROVAL_x0020_STATUS=WorkFlowStatus.PROCUREMENTAPPROVALCOMPLETED;
+                to=this.state.existingItem[0].Author.EMail;
+                nextApproverName=this.state.existingItem[0].Author.Title;
+                formData.APPROVER1_x0020_COMMENTS=this.state.ApprovalComments;
+              }
               
-              }
+            }
           }
           break;
 
-          case WorkFlowStatus.WaitingforMDMCreation:{ 
-             if(this.state.approveRejectAction =="Reject"){
+          case WorkFlowStatus.WAITINGFORAPPROVAL2:{
+            if(this.state.approveRejectAction =="Reject"){
+              formData.APPROVAL_x0020_STATUS=WorkFlowStatus.APPROVER2REJECTED;
+              to=this.state.existingItem[0].Author.EMail;
+              nextApproverName=this.state.existingItem[0].Author.Title;
+              formData.APPROVER2_x0020_REASON_x0020_FOR=this.state.ApprovalComments;
+            } else {
+              if(this.state.existingItem[0].APPROVER_x0020_LEVEL3_x0020_EMAI!="" && this.state.existingItem[0].APPROVER_x0020_LEVEL3_x0020_EMAI!=null){
+                formData.APPROVAL_x0020_STATUS=WorkFlowStatus.WAITINGFORAPPROVAL3;
+                to=this.state.existingItem[0].APPROVER_x0020_LEVEL3_x0020_EMAI;
+                nextApproverName=this.state.existingItem[0].APPROVER_x0020_LEVEL3_x0020_NAME;
+                formData.APPROVER2_x0020_COMMENTS=this.state.ApprovalComments;
+              }else{
+                formData.APPROVAL_x0020_STATUS=WorkFlowStatus.PROCUREMENTAPPROVALCOMPLETED;
                 to=this.state.existingItem[0].Author.EMail;
                 nextApproverName=this.state.existingItem[0].Author.Title;
-                formData.APPROVAL_x0020_STATUS=WorkFlowStatus.MDMRejected;
-              }else {
-                formData.APPROVAL_x0020_STATUS=WorkFlowStatus.MDMCreated;
-                to=this.state.existingItem[0].Author.EMail;
-                nextApproverName=this.state.existingItem[0].Author.Title;
+                formData.APPROVER2_x0020_COMMENTS=this.state.ApprovalComments;
               }
-
-              formData.MDM_x0020_DATE=new Date();
-              formData.AX_x0020_CUSTOMER_x0020_CODE=this.state.formData.AX_x0020_CUSTOMER_x0020_CODE;
-
-              if(this.state.approveRejectAction == "Reject")
-                formData.MDM_x0020_REASON_x0020_FOR_x0020=this.state.ApprovalComments;
-              else
-                formData.MDM_x0020_COMMENTS=this.state.ApprovalComments;
+              
+            }
           }
           break;
-        }
+
+          case WorkFlowStatus.WAITINGFORAPPROVAL3:{
+            if(this.state.approveRejectAction =="Reject"){
+              formData.APPROVAL_x0020_STATUS=WorkFlowStatus.APPROVER3REJECTED;
+              to=this.state.existingItem[0].Author.EMail;
+              nextApproverName=this.state.existingItem[0].Author.Title;
+              formData.APPROVER3_x0020_REASON_x0020_FOR=this.state.ApprovalComments;
+            } else {
+              formData.APPROVAL_x0020_STATUS=WorkFlowStatus.PROCUREMENTAPPROVALCOMPLETED;
+              to=this.state.existingItem[0].Author.EMail;
+              nextApproverName=this.state.existingItem[0].Author.Title;
+              formData.APPROVER3_x0020_COMMENTS=this.state.ApprovalComments;
+            }
+          }
+          break;
+
+           }
         
         await this.spService.updateListItem(this.props.listName,formData,this.state.updateItemId);
 
@@ -923,31 +635,42 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
           }
         }
 
-        //await this.sendEmail(to,"", formData.APPROVAL_x0020_STATUS,"",this.state.updateItemId,nextApproverName);
+        let cc:any="";
+        if(this.state.existingItem[0].Notification1 !="" && this.state.existingItem[0].Notification1 !=null) cc+=this.state.existingItem[0].Notification1+";";
+        if(this.state.existingItem[0].Notification2 !="" && this.state.existingItem[0].Notification2 !=null) cc+=this.state.existingItem[0].Notification2+";";
+        if(this.state.existingItem[0].Notification3 !="" && this.state.existingItem[0].Notification3 !=null) cc+=this.state.existingItem[0].Notification3+";";
+
+        await this.sendEmail(to,cc, formData.APPROVAL_x0020_STATUS,"",this.state.updateItemId,nextApproverName);
 
         if(this.state.approveRejectAction == "Reject"){
-          this.setState({loading:false,hideApproveRejectDig:true,hideMsgDialog:false,message:`MDM Details Form has been rejected successfully`});
+          this.setState({loading:false,hideApproveRejectDig:true,hideMsgDialog:false,message:`SPA Details Form has been rejected successfully`});
         }else {  
-          this.setState({loading:false,hideApproveRejectDig:true,hideMsgDialog:false,message:`MDM Details has been approved successfully`});
+          this.setState({loading:false,hideApproveRejectDig:true,hideMsgDialog:false,message:`SPA Details has been approved successfully`});
         }  
 
       }else{
         this.setState({commentRequired:true})
       }
     }
-  } */
+  }  
 
-  /*public async sendEmail(to:any,cc:any,status:any,createdBy:any,id:any,nextApproverName:any){
+  public async sendEmail(to:any,cc:any,status:any,createdBy:any,id:any,nextApproverName:any){
     let emailBody:any="",subject:any="",subjectMaster:any="";
     let createdByUser=createdBy!=""?createdBy:this.state.existingItem[0].Author.Title;
     
     let EmailTemplate:any=await this.spService.getListItem(ListTitles.EmailTemplate,"","","");
     let emailTemplate:any=[];
     
+    if(status == WorkFlowStatus.PROCUREMENTAPPROVALCOMPLETED)
+      emailTemplate=EmailTemplate.filter((x:any)=>x.Title == "Approved"); 
+    else if(this.state.approveRejectAction=="Reject")
+        emailTemplate=EmailTemplate.filter((x:any)=>x.Title == "Rejected"); 
+    else
+        emailTemplate=EmailTemplate.filter((x:any)=>x.Title == "Approval"); 
     
     if(emailTemplate.length>0){
       subject=this.replacePlaceholders(emailTemplate[0].Subject,createdByUser,id,nextApproverName,subjectMaster) ;
-      emailBody=this.replacePlaceholders(emailTemplate[0].Body1,createdByUser,id,nextApproverName,subjectMaster) ;
+      emailBody=this.replacePlaceholders(emailTemplate[0].Body,createdByUser,id,nextApproverName,subjectMaster) ;
     }
      
     let FlowUrls:any=await this.spService.getListItem(ListTitles.FlowUrls,"","","Title eq 'SendEmail'");
@@ -971,13 +694,13 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
 
       let sendAuthor:any=true;
       if(this.state.approveRejectAction =="Reject") { sendAuthor=false; }  
-      if(this.state.existingItem.length>0 && this.state.existingItem[0].APPROVAL_x0020_STATUS ==  WorkFlowStatus.WaitingforMDMCreation){ sendAuthor=false;  }
+      if(this.state.existingItem.length>0 && this.state.formData.APPROVAL_x0020_STATUS ==  WorkFlowStatus.PROCUREMENTAPPROVALCOMPLETED){ sendAuthor=false;  }
 
       if(sendAuthor){
         let AuthorCopy_emailTemplate=EmailTemplate.filter((x:any)=>x.Title == "AuthorCopy"); 
         if(emailTemplate.length>0){
           let AuthorCopy_subject=this.replacePlaceholders(AuthorCopy_emailTemplate[0].Subject,createdByUser,id,nextApproverName,subjectMaster) ;
-          let AuthorCopy_emailBody=this.replacePlaceholders(AuthorCopy_emailTemplate[0].Body1,createdByUser,id,nextApproverName,subjectMaster) ;
+          let AuthorCopy_emailBody=this.replacePlaceholders(AuthorCopy_emailTemplate[0].Body,createdByUser,id,nextApproverName,subjectMaster) ;
           const requestHeader1:Headers=new Headers();
           requestHeader1.append('Content-type','application/json');
           const httpClientOptions1:IHttpClientOptions={
@@ -1011,7 +734,7 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
       }catch{}
     });
     return orignalText;
-  }*/
+  } 
 
   public toggleHideErrorForm(val:any){
     this.setState({hideErroDialog:true,errorMessage:""})
@@ -1045,7 +768,7 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
           "SHIPMENT":"",
           "OCN_x0020_SELLING_x0020_PRICE":"0",
           "MARGIN":"0",
-          "MARGIN_x0020_PERCENTAGE":"",
+          "MARGIN_x0020_PERCENTAGE":"0",
           "RM_x0020_ARRIVAL_x0020_DATE":null,
           "LEAD_x0020_TIME":"",
           "FINAL_x0020_PRICE":"0",
@@ -1087,7 +810,7 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
                   {this.state.updateItemId == 0?
                     <PrimaryButton className='btnSave' iconProps={{ iconName: 'Save' }} onClick={this.onSave.bind(this)} >Submit</PrimaryButton>
                     :
-                    (this.state.hasEditPermission && 
+                    (this.state.hasEditPermission &&  
                       (this.state.enabledEdit ? 
                         <PrimaryButton className='btnSave' iconProps={{ iconName: 'Save' }} onClick={this.onSave.bind(this)} >Update</PrimaryButton> :
                         <PrimaryButton className='btnSend' iconProps={{ iconName: 'Edit' }} onClick={()=>this.setState({enabledEdit:true,disableEdit:false})} >Edit</PrimaryButton>
@@ -1095,10 +818,13 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
                     )
                   }
                   {this.state.hasApprovalAccess && this.state.updateItemId != 0 && 
-                  <>
-                    <PrimaryButton className='btnSave' iconProps={{ iconName: 'CheckMark' }} onClick={this.onApproveRejectClick.bind(this,"Approved")} >Approve</PrimaryButton>
-                    <PrimaryButton className='btnDelete' iconProps={{ iconName: 'Refresh' }} onClick={this.onApproveRejectClick.bind(this,"Reject")} >Reject</PrimaryButton>
-                  </>
+                  (this.state.existingItem[0]["APPROVAL_x0020_STATUS"]==WorkFlowStatus.ENTRYLEVEL1COMPLETEDWAITINGFORENTRYLEVEL2 ?
+                    <PrimaryButton className='btnSave' iconProps={{ iconName: 'Save' }} onClick={this.onEntryLevel2Save.bind(this)} >Submit</PrimaryButton>
+                  :
+                    <>
+                      <PrimaryButton className='btnSave' iconProps={{ iconName: 'CheckMark' }} onClick={this.onApproveRejectClick.bind(this,"Approved")} >Approve</PrimaryButton>
+                      <PrimaryButton className='btnDelete' iconProps={{ iconName: 'Refresh' }} onClick={this.onApproveRejectClick.bind(this,"Reject")} >Reject</PrimaryButton>
+                    </>)
                   }
                   <DefaultButton className='btnCancel' iconProps={{ iconName: 'Cancel' }} onClick={this.onCancel.bind(this)} >Cancel</DefaultButton>
                 </div>
@@ -1107,8 +833,9 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
           </header>
 
           <div className='formContainer'>
-            <div className='buttonSection' style={{border:"0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div className='buttonSection' style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <span className='gridsectionHeader'><FontIcon  aria-label="Info" iconName="Info" className="iconClass" /> Request Information</span>
+              {this.state.existingItem.length>0 && <span className="status">{this.state.existingItem[0]["APPROVAL_x0020_STATUS"]}</span>}
             </div>
             <div className='twoColumn' >
               <div><Label>REQUESTER NAME </Label> <TextField   disabled value={this.state.formData.REQUESTER_x0020_NAME?this.state.formData.REQUESTER_x0020_NAME:""} onChange={this.onTextBoxChangeEvent.bind(this,"REQUESTER_x0020_NAME")}  /></div>
@@ -1116,14 +843,14 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
             </div>
             <div className='twoColumn' >
               <div><Label>SUPPLIER TYPE <span className='warning'>*</span></Label> <Select className={this.state.showErrorBorder && this.state.formData.SUPPLIER_x0020_TYPE ==""? "custdropdown required":"notrequired"}  defaultValue={this.state.formData.SUPPLIER_x0020_TYPE} isDisabled={this.state.disableEdit} onChange={this.onDropdownChangeEvent.bind(this,"SUPPLIER_x0020_TYPE")} options={this.state.Master_dropdownValue["SUPPLIER TYPE"]} /></div>
-              {this.state.formData.SUPPLIER_x0020_TYPE =="EXIST" && <div><Label>EXISTING SUPPLIER NAME <span className='warning'>*</span></Label> <Select className={this.state.showErrorBorder && this.state.formData.EXISTING_x0020_SUPPLIER_x0020_NA ==""? "custdropdown required":"notrequired"}  defaultValue={this.state.formData.EXISTING_x0020_SUPPLIER_x0020_NA} isDisabled={this.state.disableEdit} onChange={this.onDropdownChangeEvent.bind(this,"EXISTING_x0020_SUPPLIER_x0020_NA")} options={this.state.Master_dropdownValue["EXISTING SUPPLIER NAME"]} /></div>}
-              {this.state.formData.SUPPLIER_x0020_TYPE =="NEW" && <div><Label>NEW SUPPLIER NAME <span className='warning'>*</span></Label> <TextField className={this.state.showErrorBorder && this.state.formData.NEW_x0020_SUPPLIER_x0020_NAME ==""? "required":"notrequired"} disabled={this.state.disableEdit} value={this.state.formData.NEW_x0020_SUPPLIER_x0020_NAME} onChange={this.onTextBoxChangeEvent.bind(this,"NEW_x0020_SUPPLIER_x0020_NAME")}  /></div>}
+              {(this.state.formData.SUPPLIER_x0020_TYPE =="EXIST" ||(this.state.existingItem.length>0 &&  this.state.formData.SUPPLIER_x0020_TYPE[0].value == "EXIST")) && <div><Label>EXISTING SUPPLIER NAME <span className='warning'>*</span></Label> <Select className={this.state.showErrorBorder && this.state.formData.EXISTING_x0020_SUPPLIER_x0020_NA ==""? "custdropdown required":"notrequired"}  defaultValue={this.state.formData.EXISTING_x0020_SUPPLIER_x0020_NA} isDisabled={this.state.disableEdit} onChange={this.onDropdownChangeEvent.bind(this,"EXISTING_x0020_SUPPLIER_x0020_NA")} options={this.state.Master_dropdownValue["EXISTING SUPPLIER NAME"]} /></div>}
+              {(this.state.formData.SUPPLIER_x0020_TYPE =="NEW" ||(this.state.existingItem.length>0 &&  this.state.formData.SUPPLIER_x0020_TYPE[0].value == "NEW")) && <div><Label>NEW SUPPLIER NAME <span className='warning'>*</span></Label> <TextField className={this.state.showErrorBorder && this.state.formData.NEW_x0020_SUPPLIER_x0020_NAME ==""? "required":"notrequired"} disabled={this.state.disableEdit} value={this.state.formData.NEW_x0020_SUPPLIER_x0020_NAME} onChange={this.onTextBoxChangeEvent.bind(this,"NEW_x0020_SUPPLIER_x0020_NAME")}  /></div>}
             </div>
             <div className='twoColumn' >
               <div><Label>PRODUCT TYPE <span className='warning'>*</span></Label> <Select className={this.state.showErrorBorder && this.state.formData.PRODUCT_x0020_TYPE ==""? "custdropdown required":"notrequired"}  defaultValue={this.state.formData.PRODUCT_x0020_TYPE} isDisabled={this.state.disableEdit} onChange={this.onDropdownChangeEvent.bind(this,"PRODUCT_x0020_TYPE")} options={this.state.Master_dropdownValue["PRODUCT TYPE"]} /></div>
-              {this.state.formData.PRODUCT_x0020_TYPE =="EXIST" && <div><Label>EXISTING PRODUCT NAME <span className='warning'>*</span></Label> <Select className={this.state.showErrorBorder && this.state.formData.EXISTING_x0020_PRODUCT_x0020_NAM ==""? "custdropdown required":"notrequired"}  defaultValue={this.state.formData.EXISTING_x0020_PRODUCT_x0020_NAM} isDisabled={this.state.disableEdit} onChange={this.onDropdownChangeEvent.bind(this,"EXISTING_x0020_PRODUCT_x0020_NAM")} options={this.state.Master_dropdownValue["EXISTING PRODUCT NAME"]} /></div>}
-              {this.state.formData.PRODUCT_x0020_TYPE =="NEW" && <div><Label>NEW PRODUCT NAME <span className='warning'>*</span></Label> <TextField className={this.state.showErrorBorder && this.state.formData.NEW_x0020_PRODUCT_x0020_NAME ==""? "required":"notrequired"} disabled={this.state.disableEdit} value={this.state.formData.NEW_x0020_PRODUCT_x0020_NAME} onChange={this.onTextBoxChangeEvent.bind(this,"NEW_x0020_PRODUCT_x0020_NAME")}  /></div>}
-            </div>
+              {(this.state.formData.PRODUCT_x0020_TYPE =="EXIST" ||(this.state.existingItem.length>0 &&  this.state.formData.PRODUCT_x0020_TYPE[0].value == "EXIST")) && <div><Label>EXISTING PRODUCT NAME <span className='warning'>*</span></Label> <Select className={this.state.showErrorBorder && this.state.formData.EXISTING_x0020_PRODUCT_x0020_NAM ==""? "custdropdown required":"notrequired"}  defaultValue={this.state.formData.EXISTING_x0020_PRODUCT_x0020_NAM} isDisabled={this.state.disableEdit} onChange={this.onDropdownChangeEvent.bind(this,"EXISTING_x0020_PRODUCT_x0020_NAM")} options={this.state.Master_dropdownValue["EXISTING PRODUCT NAME"]} /></div>}
+              {(this.state.formData.PRODUCT_x0020_TYPE =="NEW" ||(this.state.existingItem.length>0 &&  this.state.formData.PRODUCT_x0020_TYPE[0].value == "NEW")) && <div><Label>NEW PRODUCT NAME <span className='warning'>*</span></Label> <TextField className={this.state.showErrorBorder && this.state.formData.NEW_x0020_PRODUCT_x0020_NAME ==""? "required":"notrequired"} disabled={this.state.disableEdit} value={this.state.formData.NEW_x0020_PRODUCT_x0020_NAME} onChange={this.onTextBoxChangeEvent.bind(this,"NEW_x0020_PRODUCT_x0020_NAME")}  /></div>}
+            </div> 
             <div className='twoColumn' >
               <div><Label>CHILLI RELATED PURCHASE <span className='warning'>*</span></Label> <Select className={this.state.showErrorBorder && this.state.formData.CHILLI_x0020_RELATED_x0020_PURCH ==""? "custdropdown required":"notrequired"}  defaultValue={this.state.formData.CHILLI_x0020_RELATED_x0020_PURCH} isDisabled={this.state.disableEdit} onChange={this.onDropdownChangeEvent.bind(this,"CHILLI_x0020_RELATED_x0020_PURCH")} options={this.state.Master_dropdownValue["CHILLI RELATED PURCHASE"]} /></div>
               <div><Label>CUSTOMER NAME <span className='warning'>*</span></Label> <TextField className={this.state.showErrorBorder && this.state.formData.CUSTOMER_x0020_NAME ==""? "required":"notrequired"} disabled={this.state.disableEdit} value={this.state.formData.CUSTOMER_x0020_NAME} onChange={this.onTextBoxChangeEvent.bind(this,"CUSTOMER_x0020_NAME")}  /></div>
@@ -1144,7 +871,7 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
               <div className='twoColumn' >
               <div><Label>VALUES IN RS <span className='warning'>*</span></Label> <TextField type='Number' className={this.state.showErrorBorder && this.state.formData.VALUES_x0020_IN_x0020_RS ==""? "required":"notrequired"} disabled={this.state.disableEdit} value={this.state.formData.VALUES_x0020_IN_x0020_RS} onChange={this.onTextBoxChangeEvent.bind(this,"VALUES_x0020_IN_x0020_RS")}  /></div>
               <div><Label>UOM <span className='warning'>*</span></Label> <Select className={this.state.showErrorBorder && this.state.formData.UOM ==""? "custdropdown required":"notrequired"}  defaultValue={this.state.formData.UOM} isDisabled={this.state.disableEdit} onChange={this.onDropdownChangeEvent.bind(this,"UOM")} options={this.state.Master_dropdownValue["UOM"]} /></div>
-            </div>
+            </div> 
             <div className='twoColumn'>
               <div><Label>OCN NUMBER <span className='warning'>*</span></Label> <TextField className={this.state.showErrorBorder && this.state.formData.OCN_x0020_NUMBER ==""? "required":"notrequired"} disabled={this.state.disableEdit} value={this.state.formData.OCN_x0020_NUMBER} onChange={this.onTextBoxChangeEvent.bind(this,"OCN_x0020_NUMBER")}  /></div>
               <div><Label>OCN DATE  <span className='warning'>*</span></Label> <DatePicker className={this.state.showErrorBorder && this.state.formData.OCN_x0020_DATE ==null? "required":"notrequired"}  disabled={this.state.disableEdit} firstDayOfWeek={DayOfWeek.Sunday} formatDate={onFormatDate}   value={this.state.formData.OCN_x0020_DATE?this.state.formData.OCN_x0020_DATE:null} onSelectDate={this.onDateChange.bind(this,"OCN_x0020_DATE")}  /></div>
@@ -1191,14 +918,24 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
               <div><Label>COMMENTS <span className='warning'>*</span></Label><TextField multiline rows={5}  value={this.state.formData.COMMENTS} className={this.state.showErrorBorder && this.state.formData.COMMENTS ==""? "required":"notrequired"} disabled={this.state.disableEdit}  onChange={this.onTextBoxChangeEvent.bind(this,"COMMENTS")}  /></div>
             </div>
           </div>  
-          {this.state.formData.TEMPLATE_x0020_TYPE == "RM TEMPLATE" && 
+          {(this.state.formData.TEMPLATE_x0020_TYPE == "RM TEMPLATE" || (this.state.existingItem.length>0 &&  this.state.formData.TEMPLATE_x0020_TYPE[0].value == "RM TEMPLATE")) && 
           <div className='formContainer'>
             <div className='buttonSection'>
               <span className='gridsectionHeader'><FontIcon  aria-label="ConnectContacts" iconName="ConnectContacts" className="iconClass" /> Entry Level 2 Information</span>
             </div>
             <div className='twoColumn' >
               <div><Label>ENTEY LEVEL2 REQUIRED <span className='warning'>*</span></Label> <Select className={this.state.showErrorBorder && this.state.formData.ENTEY_x0020_LEVEL2_x0020_REQUIRE ==""? "custdropdown required":"notrequired"}  defaultValue={this.state.formData.ENTEY_x0020_LEVEL2_x0020_REQUIRE} isDisabled={this.state.disableEdit} onChange={this.onDropdownChangeEvent.bind(this,"ENTEY_x0020_LEVEL2_x0020_REQUIRE")} options={this.state.Master_dropdownValue["ENTEY LEVEL2 REQUIRED"]} /></div>
+              {(this.state.formData.ENTEY_x0020_LEVEL2_x0020_REQUIRE =="YES" ||(this.state.existingItem.length>0 &&  this.state.formData.ENTEY_x0020_LEVEL2_x0020_REQUIRE[0].value == "YES")) && <div><Label>ENTEY LEVEL2 NAME <span className='warning'>*</span></Label> <TextField  disabled  value={this.state.formData.ENTEY_x0020_LEVEL2_x0020_NAME} onChange={this.onTextBoxChangeEvent.bind(this,"ENTEY_x0020_LEVEL2_x0020_NAME")}  /></div>}
            </div>
+          {this.state.existingItem.length>0 && this.state.existingItem[0].APPROVAL_x0020_STATUS== WorkFlowStatus.ENTRYLEVEL1COMPLETEDWAITINGFORENTRYLEVEL2 && this.state.existingItem[0].Author.Id != this.state.currentUser.Id && this.state.currentUser.Email.toLowerCase()!= "sreekanth.shanmughan@abmauri.com" && 
+            <><div className='twoColumn' >
+              <div><Label>OCN SELLING PRICE <span className='warning'>*</span></Label> <TextField type='Number' className={this.state.showErrorBorder && this.state.formData.OCN_x0020_SELLING_x0020_PRICE ==""? "required":"notrequired"} disabled={this.state.existingItem.length>0 && this.state.existingItem[0].APPROVAL_x0020_STATUS!= WorkFlowStatus.ENTRYLEVEL1COMPLETEDWAITINGFORENTRYLEVEL2} value={this.state.formData.OCN_x0020_SELLING_x0020_PRICE} onChange={this.onTextBoxChangeEvent.bind(this,"OCN_x0020_SELLING_x0020_PRICE")}  /></div>
+              <div><Label>MARGIN PERCENTAGE <span className='warning'>*</span></Label> <TextField type='Number' className={this.state.showErrorBorder && this.state.formData.MARGIN_x0020_PERCENTAGE ==""? "required":"notrequired"} disabled={this.state.existingItem.length>0 &&  this.state.existingItem[0].APPROVAL_x0020_STATUS!= WorkFlowStatus.ENTRYLEVEL1COMPLETEDWAITINGFORENTRYLEVEL2} value={this.state.formData.MARGIN_x0020_PERCENTAGE} onChange={this.onTextBoxChangeEvent.bind(this,"MARGIN_x0020_PERCENTAGE")}  /></div>
+            </div>
+            <div className='twoColumn' >
+              <div><Label>MARGIN <span className='warning'>*</span></Label> <TextField type='Number'  disabled  value={this.state.formData.MARGIN} /></div>
+            </div></>
+            }
           </div>}       
           <div className='formContainer' style={{marginBottom:"15px"}}>
             <div className='buttonSection'>
@@ -1236,12 +973,12 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
           </div>
 
 
-          {this.state.existingItem.length>0 && (this.state.existingItem[0]["APPROVAL_x0020_STATUS"].indexOf("Reject")!=-1 || (this.state.existingItem[0].RequesterComments !=null && this.state.existingItem[0].RequesterComments !=""))&&
+          {this.state.existingItem.length>0 && (this.state.existingItem[0]["APPROVAL_x0020_STATUS"].toLowerCase().indexOf("reject")!=-1 || (this.state.existingItem[0].RequesterComments !=null && this.state.existingItem[0].RequesterComments !=""))&&
             <div className='formContainer'>
               <div className='buttonSection'>
                 <span className='gridsectionHeader'><FontIcon  aria-label="WorkItem" iconName="WorkItem" className="iconClass" />Requester Comments</span>
               </div>
-              {this.state.hasEditPermission && this.state.existingItem[0]["APPROVAL_x0020_STATUS"].indexOf("Reject")!=-1 && <div  className='oneColumn'>
+              {this.state.hasEditPermission && this.state.existingItem[0]["APPROVAL_x0020_STATUS"].toLowerCase().indexOf("reject")!=-1 && <div  className='oneColumn'>
                 <Label>Comments</Label>
                 <TextField multiline rows={5} value={this.state.RequesterComments} className={this.state.showErrorBorder && this.state.RequesterComments ==""? "required":"notrequired"}  onChange={this.onTextBoxChangeEvent.bind(this,"RequesterComments")}  />
               </div>}
@@ -1278,46 +1015,50 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
                   <th>Role</th>
                   <th>Approver Name</th>
                   <th>Approver Email</th>
-                  <th>Action</th>
                   <th>Approved Comment</th>
                   <th>Rejected Comment</th>
                 </tr> 
                  
-                <tr>
+                 {this.state.existingItem[0].PL_x0020_EMAIL != "" && this.state.formData.CHILLI_x0020_RELATED_x0020_PURCH == "YES" && 
+                 <tr>
+                  <td>PROCUREMENT LEAD APPROVAL</td>
+                  <td>{this.state.existingItem[0].PL_x0020_NAME}</td>
+                  <td>{this.state.existingItem[0].PL_x0020_EMAIL}</td>
+                  <td>{this.state.existingItem[0].APPROVER1_x0020_COMMENTS}</td>
+                  <td>{this.state.existingItem[0].APPROVER1_x0020_REASON_x0020_FOR}</td>
+                </tr>}
+
+                {this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_EMAI != null && <tr>
                   <td>Approver 1</td>
                   <td>{this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_NAME}</td>
                   <td>{this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_EMAI}</td>
-                  <td>{this.state.existingItem[0].APPROVER1_x0020_APPROVAL}</td>
                   <td>{this.state.existingItem[0].APPROVER1_x0020_COMMENTS}</td>
                   <td>{this.state.existingItem[0].APPROVER1_x0020_REASON_x0020_FOR}</td>
-                </tr>
+                </tr>}
 
-                <tr>
+                {this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_EMAI != null &&<tr>
                   <td>Approver 2</td>
                   <td>{this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_NAME}</td>
                   <td>{this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_EMAI}</td>
-                  <td>{this.state.existingItem[0].APPROVER2_x0020_APPROVAL}</td>
                   <td>{this.state.existingItem[0].APPROVER2_x0020_COMMENTS}</td>
                   <td>{this.state.existingItem[0].APPROVER2_x0020_REASON_x0020_FOR}</td>
-                </tr>
+                </tr>}
 
-                <tr>
+                {this.state.existingItem[0].APPROVER_x0020_LEVEL3_x0020_EMAI != null &&<tr>
                   <td>Approver 3</td>
                   <td>{this.state.existingItem[0].APPROVER_x0020_LEVEL3_x0020_NAME}</td>
                   <td>{this.state.existingItem[0].APPROVER_x0020_LEVEL3_x0020_EMAI}</td>
-                  <td>{this.state.existingItem[0].APPROVER3_x0020_APPROVAL}</td>
                   <td>{this.state.existingItem[0].APPROVER3_x0020_COMMENTS}</td>
                   <td>{this.state.existingItem[0].APPROVER3_x0020_REASON_x0020_FOR}</td>
-                </tr>
+                </tr>}
 
-                <tr>
+                {this.state.existingItem[0].APPROVER_x0020_LEVEL4_x0020_EMAI != null &&<tr>
                   <td>Approver 4</td>
                   <td>{this.state.existingItem[0].APPROVER_x0020_LEVEL4_x0020_NAME}</td>
                   <td>{this.state.existingItem[0].APPROVER_x0020_LEVEL4_x0020_EMAI}</td>
-                  <td>{this.state.existingItem[0].APPROVER4_x0020_APPROVAL}</td>
                   <td>{this.state.existingItem[0].APPROVER4_x0020_COMMENTS}</td>
                   <td>{this.state.existingItem[0].APPROVER4_x0020_REASON_x0020_FOR}</td>
-                </tr>
+                </tr>}
               </table>
             </div>
           </div>}
@@ -1356,9 +1097,6 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
  
         <Dialog hidden={this.state.hideApproveRejectDig} onDismiss={()=>{this.setState({hideApproveRejectDig:true})}} dialogContentProps={Helper.dialogApproveRejectProps}  modalProps={Helper.modalProps} minWidth={600}>
           <div>
-            {(this.state.existingItem.length>0 && this.state.existingItem[0].APPROVAL_x0020_STATUS == WorkFlowStatus.WaitingforMDMCreation && this.state.approveRejectAction != "Reject") && <div className='oneColumn'>
-              <div><Label>AX CUSTOMER CODE <span className='warning'>*</span></Label> <TextField className={this.state.commentRequired ? "required":"notrequired"}  value={this.state.formData.AX_x0020_CUSTOMER_x0020_CODE?this.state.formData.AX_x0020_CUSTOMER_x0020_CODE:""} onChange={this.onTextBoxChangeEvent.bind(this,"AX_x0020_CUSTOMER_x0020_CODE")}  /></div>
-            </div>}
             <div  className='oneColumn'>
               <div><Label>Comments</Label>
                 <TextField multiline rows={5} className={this.state.commentRequired ? "required":"notrequired"} value={this.state.ApprovalComments}  onChange={this.onTextBoxChangeEvent.bind(this,"ApprovalComments")}  />

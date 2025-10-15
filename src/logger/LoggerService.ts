@@ -1,9 +1,9 @@
 import { ServiceKey } from "@microsoft/sp-core-library";
 import ILoggerService from "./ILoggerService";
 import ICustomLogMessage from "../models/ICustomLogMessage";
-import  spservices  from "../services/spService";
-import { ListTitles } from "../shared/helpers/constant";
-import  Helper  from "../shared/helpers/index";
+//import  spservices  from "../services/spService";
+// import { ListTitles } from "../shared/helpers/constant";
+// import  Helper  from "../shared/helpers/index";
 
 /* The LoggingService class provides methods for logging verbose, information, warning, and error
 messages with optional service scope. */
@@ -11,10 +11,10 @@ export class LoggingService implements ILoggerService {
   public static readonly serviceKey: ServiceKey<ILoggerService> =
     ServiceKey.create<ILoggerService>("ECO.LoggingService", LoggingService);
 
-    private spService: spservices;
+   // private spService: spservices;
 
   constructor(context:any) {
-    this.spService=new spservices(context);
+  //  this.spService=new spservices(context);
   }
   public Log = async (logMessage: ICustomLogMessage) => {
     try {
@@ -55,15 +55,16 @@ export class LoggingService implements ILoggerService {
 
   private saveLogs = async (logMessage: ICustomLogMessage, logType: string) => {
     try {
-      const webpartLoggingData = {
-        WebPartName: logMessage.WebPartName,
-        ComponentName: logMessage.ComponentName,
-        MethodName: logMessage.MethodName,
-        Message: logMessage.Message,
-        LogType: logType,
-        Date: Helper.currentDate(),
-      };
-      await this.spService.saveListItem(ListTitles.ExceptionLogs, webpartLoggingData);
+      // const webpartLoggingData = {
+      //   WebPartName: logMessage.WebPartName,
+      //   ComponentName: logMessage.ComponentName,
+      //   MethodName: logMessage.MethodName,
+      //   Message: logMessage.Message,
+      //   LogType: logType,
+      //   Date: Helper.currentDate(),
+      // };
+      //await this.spService.saveListItem(ListTitles.ExceptionLogs, webpartLoggingData);
+      console.error(logMessage);
     } catch (error) {
       console.error("An error occurred while saving logs:", error);
     }

@@ -1,13 +1,7 @@
 export class ListTitles{
     constructor(){}
-    public static readonly MasterDataFile ="Master Data File";
     public static readonly ExceptionLogs="ExceptionLogs";
-    public static readonly STATEMASTER="STATEMASTER";
-    public static readonly ProductDimensionMaster="ProductDimensionMaster";
-    public static readonly RMAnalysisDimensionMaster="RMAnalysisDimensionMaster";
-    public static readonly TransportTypeDimensionMaster="TransportTypeDimensionMaster";
-    public static readonly ReviewersMasterList="ReviewersMasterList";
-    public static readonly BankLevel1ApproverMaster="BankLevel1ApproverMaster";
+    public static readonly SPAApprovers="SPAApprovers";
     public static readonly FlowUrls="FlowUrls";
     public static readonly EmailTemplate="EmailTemplate";
     
@@ -38,26 +32,22 @@ export class ApprovalStatus{
 }
 
 export class WorkFlowStatus{
-    public static readonly WaitingForVerifierReview="Waiting For Verifier Review";
-    public static readonly WaitingForTerritoryOfficerReview="Waiting For Territory Officer Review";
-    public static readonly WaitingForTerritoryOfficerAndABFLReview="Waiting For Territory Officer & ABFL Review";
-    public static readonly RejectedByVerifier="Rejected By Verifier";
-    public static readonly WaitingforMDMCreation="Waiting for MDM Creation";
-    public static readonly RejectedByTerritoryOfficer="Rejected By Territory Officer";
-    public static readonly MDMCreated="MDM Created";
-    public static readonly MDMRejected="MDM Rejected";
-    public static readonly WaitingForReviewersReview="Waiting For Reviewers Review";
-    public static readonly AfterReviewersReviewWaitingforMDMCreation="After Reviewers Review Waiting for MDM Creation";
-    public static readonly PriceUpdationWaitingforApproval="Price Updation Waiting for Approval";
-    public static readonly PriceUpdationWaitingforMDM="AppPrice Updation Waiting for MDMroved";
-    public static readonly PriceUpdationApproverRejected="Price Updation Approver Rejected";
-    public static readonly PriceUpdationCompleted="Price Updation Completed";
-    public static readonly PriceUpdationMDMRejected="Price Updation MDM Rejected";
-    public static readonly WaitingForBankChangesPlantReview="Waiting For Bank Changes Plant Review";
-    public static readonly RejectedByBankChangesPlantReviewer="Rejected By Bank Changes Plant Reviewer";
-    public static readonly FDAPPROVED="FD APPROVED";
-    public static readonly ABFLAPPROVED="ABFL APPROVED";
-    public static readonly RejectedByABFL="Rejected By ABFL";
-    public static readonly MDMCANCELLED="MDM CANCELLED";
+    public static readonly ENTRYLEVEL1COMPLETEDWAITINGFORENTRYLEVEL2="ENTRY LEVEL 1 COMPLETED WAITING FOR ENTRY LEVEL 2";  
+    public static readonly ENTRYLEVELSCOMPLETEDWAITINGFORAPPROVALS="ENTRY LEVELS COMPLETED WAITING FOR APPROVALS"; 
+    public static readonly APPROVER1APPROVED="APPROVER1 APPROVED"; 
+    public static readonly APPROVER1REJECTED="APPROVER1 REJECTED"; 
+    public static readonly APPROVER2APPROVED="APPROVER2 APPROVED"; 
+    public static readonly APPROVER2REJECTED="APPROVER2 REJECTED"; 
+    public static readonly APPROVER3APPROVED="APPROVER3 APPROVED"; 
+    public static readonly APPROVER3REJECTED="APPROVER3 REJECTED"; 
+    public static readonly APPROVER4APPROVED="APPROVER4 APPROVED"; 
+    public static readonly APPROVER5REJECTED="APPROVER4 REJECTED"; 
+    public static readonly PROCUREMENTAPPROVALCOMPLETED="PROCUREMENT APPROVAL COMPLETED"; 
+    public static readonly WAITINGFORPROCUREMENTLEADAPPROVAL="WAITING FOR PROCUREMENT LEAD APPROVAL"; 
+    public static readonly PLREJECTED="PL REJECTED"; 
+    public static readonly WAITINGFORAPPROVAL1="WAITING FOR APPROVAL1"; 
+    public static readonly WAITINGFORAPPROVAL2="WAITING FOR APPROVAL2"; 
+    public static readonly WAITINGFORAPPROVAL3="WAITING FOR APPROVAL3"; 
+    
 }
  
