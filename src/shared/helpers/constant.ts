@@ -41,13 +41,13 @@ export class WorkFlowStatus{
     public static readonly APPROVER3APPROVED="APPROVER3 APPROVED"; 
     public static readonly APPROVER3REJECTED="APPROVER3 REJECTED"; 
     public static readonly APPROVER4APPROVED="APPROVER4 APPROVED"; 
-    public static readonly APPROVER5REJECTED="APPROVER4 REJECTED"; 
+    public static readonly APPROVER4REJECTED="APPROVER4 REJECTED"; 
     public static readonly PROCUREMENTAPPROVALCOMPLETED="PROCUREMENT APPROVAL COMPLETED"; 
     public static readonly WAITINGFORPROCUREMENTLEADAPPROVAL="WAITING FOR PROCUREMENT LEAD APPROVAL"; 
     public static readonly PLREJECTED="PL REJECTED"; 
     public static readonly WAITINGFORAPPROVAL1="WAITING FOR APPROVAL1"; 
     public static readonly WAITINGFORAPPROVAL2="WAITING FOR APPROVAL2"; 
     public static readonly WAITINGFORAPPROVAL3="WAITING FOR APPROVAL3"; 
-    
+    public static readonly WAITINGFORAPPROVAL4="WAITING FOR APPROVAL4"; 
 }
  

@@ -333,26 +333,30 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
       let itemId:any=0;
       let nextApproverName:any="",to:any="";
       
-      //if(this.state.updateItemId==0){
-        await this.getWorkflowAction(formData);
-        if(formData.ENTEY_x0020_LEVEL2_x0020_REQUIRE=="YES"){
-          nextApproverName=formData["ENTEY_x0020_LEVEL2_x0020_NAME"];
-          to=formData["ENTEY_x0020_LEVEL2_x0020_EMAIL"]
-        }else{
-          nextApproverName=formData.APPROVER_x0020_LEVEL2_x0020_NAME;
-          to=formData.APPROVER_x0020_LEVEL1_x0020_EMAI;
-        }
+      await this.getWorkflowAction(formData);  
+
+      if(formData.ENTEY_x0020_LEVEL2_x0020_REQUIRE=="YES" && this.state.formData.CHILLI_x0020_RELATED_x0020_PURCH == "YES"){
+        formData.APPROVAL_x0020_STATUS= WorkFlowStatus.ENTRYLEVEL1COMPLETEDWAITINGFORENTRYLEVEL2;
+        nextApproverName=formData["ENTEY_x0020_LEVEL2_x0020_NAME"];
+        to=formData["ENTEY_x0020_LEVEL2_x0020_EMAIL"]
+      }else{
+        nextApproverName=formData.APPROVER_x0020_LEVEL1_x0020_NAME;
+        to=formData.APPROVER_x0020_LEVEL1_x0020_EMAI;
+      }
 
       if(this.state.updateItemId==0){
         result= await this.spService.saveListItem(this.props.listName,formData);
         if(result){
-          itemId=result.Id;
+          itemId=result.Id; 
 
-          let cc:any="";
-          if(formData.Notification1 !="" && formData.Notification1 !=null) cc+=formData.Notification1+";";
-          if(formData.Notification2 !="" && formData.Notification2 !=null) cc+=formData.Notification2+";";
-          if(formData.Notification3 !="" && formData.Notification3 !=null) cc+=formData.Notification3+";";
-          await this.sendEmail(to,cc, formData.APPROVAL_x0020_STATUS,this.state.currentUser.Title,result.Id,nextApproverName);
+          let nextApprover="";
+          if(formData.ENTEY_x0020_LEVEL2_x0020_REQUIRE=="YES") nextApprover+= formData["ENTEY_x0020_LEVEL2_x0020_NAME"]+"<br />";
+          if(this.state.formData.APPROVER_x0020_LEVEL1_x0020_NAME !="" && this.state.formData.APPROVER_x0020_LEVEL1_x0020_NAME !=null){ nextApprover+=this.state.formData.APPROVER_x0020_LEVEL1_x0020_NAME+"<br />"}
+          if(this.state.formData.APPROVER_x0020_LEVEL2_x0020_NAME !="" && this.state.formData.APPROVER_x0020_LEVEL2_x0020_NAME !=null){ nextApprover+=this.state.formData.APPROVER_x0020_LEVEL2_x0020_NAME+"<br />"}
+          if(this.state.formData.APPROVER_x0020_LEVEL3_x0020_NAME !="" && this.state.formData.APPROVER_x0020_LEVEL3_x0020_NAME !=null){ nextApprover+=this.state.formData.APPROVER_x0020_LEVEL3_x0020_NAME+"<br />"}
+          if(this.state.formData.APPROVER_x0020_LEVEL4_x0020_NAME !="" && this.state.formData.APPROVER_x0020_LEVEL4_x0020_NAME !=null){ nextApprover+=this.state.formData.APPROVER_x0020_LEVEL4_x0020_NAME+"<br />"}
+        
+          await this.sendEmail(to,"", formData.APPROVAL_x0020_STATUS,this.state.currentUser.Title,result.Id,nextApproverName,"",nextApprover);
           this.setState({itemId:result.Id});
         } 
       }
@@ -384,12 +388,13 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
         itemId=this.state.updateItemId;
         result=await this.spService.updateListItem(this.props.listName,formData,this.state.updateItemId);
 
-        let cc:any="";
-        if(this.state.existingItem[0].Notification1 !="" && this.state.existingItem[0].Notification1 !=null) cc+=this.state.existingItem[0].Notification1+";";
-        if(this.state.existingItem[0].Notification2 !="" && this.state.existingItem[0].Notification2 !=null) cc+=this.state.existingItem[0].Notification2+";";
-        if(this.state.existingItem[0].Notification3 !="" && this.state.existingItem[0].Notification3 !=null) cc+=this.state.existingItem[0].Notification3+";";
-
-        await this.sendEmail(to,cc, formData.APPROVAL_x0020_STATUS,"",this.state.updateItemId,nextApproverName);
+        let nextApprover="";
+        if(this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_NAME !=null){ nextApprover+=this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_NAME+"<br />"}
+        if(this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_NAME !=null){ nextApprover+=this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_NAME+"<br />"}
+        if(this.state.existingItem[0].APPROVER_x0020_LEVEL3_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL3_x0020_NAME !=null){ nextApprover+=this.state.existingItem[0].APPROVER_x0020_LEVEL3_x0020_NAME+"<br />"}
+        if(this.state.existingItem[0].APPROVER_x0020_LEVEL4_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL4_x0020_NAME !=null){ nextApprover+=this.state.existingItem[0].APPROVER_x0020_LEVEL4_x0020_NAME+"<br />"}
+        
+        await this.sendEmail(to,"", formData.APPROVAL_x0020_STATUS,"",this.state.updateItemId,nextApproverName,"",nextApprover);
       }
 
       if(result){
@@ -437,11 +442,19 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
     let SPAApprovers:any=await this.spService.getListItem(ListTitles.SPAApprovers,"*","","");
     let condition:any="";
 
-    if(this.state.formData.CHILLI_x0020_RELATED_x0020_PURCH == "YES"){
-      condition="Chilli Related Purchase";
-      formData.APPROVAL_x0020_STATUS= WorkFlowStatus.WAITINGFORPROCUREMENTLEADAPPROVAL;
-    }else{
-      formData.APPROVAL_x0020_STATUS= WorkFlowStatus.WAITINGFORAPPROVAL1;
+    formData.APPROVAL_x0020_STATUS= WorkFlowStatus.WAITINGFORAPPROVAL1;
+
+    if(formData.ENTEY_x0020_LEVEL2_x0020_REQUIRE=="YES" && this.state.formData.CHILLI_x0020_RELATED_x0020_PURCH == "YES"){
+      if(parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)>0 && parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)<=4000000) condition="≤ 10,00,000";
+      else condition="> 40,00,000 and ≤ 1.6 Crore"
+    } else
+    if(formData.ENTEY_x0020_LEVEL2_x0020_REQUIRE=="YES"){
+      if(parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)>0 && parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)<=4000000) condition="> 10,00,000 and ≤ 40,00,000";
+      else if(parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)>4000000 && parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)<=16000000) condition="> 40,00,000 and ≤ 1.6 Crore";
+      else if(parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)>16000000 && parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)<=40000000) condition="> 1.6 Crore and ≤ 4 Crore";
+      else if(parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)>40000000 && parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)<=80000000) condition="> 40,00,000 and ≤ 1.6 Crore";
+      else if(parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)>80000000 ) condition="8 Crore";
+    } else{
       if(parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)<=1000000) condition="≤ 10,00,000"; 
       else if(parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)>1000000 && parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)<=4000000) condition="> 10,00,000 and ≤ 40,00,000";
       else if(parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)>4000000 && parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)<=16000000) condition="> 40,00,000 and ≤ 1.6 Crore";
@@ -450,10 +463,42 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
       else if(parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)>80000000 ) condition="8 Crore";
     }
 
-    if(formData.ENTEY_x0020_LEVEL2_x0020_REQUIRE =="YES")
-      formData.APPROVAL_x0020_STATUS= WorkFlowStatus.ENTRYLEVEL1COMPLETEDWAITINGFORENTRYLEVEL2;
+    if(formData.ENTEY_x0020_LEVEL2_x0020_REQUIRE=="YES" && this.state.formData.CHILLI_x0020_RELATED_x0020_PURCH == "YES"){
+       let approvers:any=SPAApprovers.filter((x:any)=>x.Title == condition);
+        if(approvers!=null && approvers.length>0){
+          formData["APPROVER_x0020_LEVEL1_x0020_NAME"]=approvers[0]["Approver2Name"];
+          formData["APPROVER_x0020_LEVEL1_x0020_EMAI"]=approvers[0]["Approver2Email"];
+          formData["APPROVER_x0020_LEVEL2_x0020_NAME"]=approvers[0]["Approver3Name"];
+          formData["APPROVER_x0020_LEVEL2_x0020_EMAI"]=approvers[0]["Approver3Email"];
+          formData["APPROVER_x0020_LEVEL3_x0020_NAME"]=approvers[0]["Approver4Name"];
+          formData["APPROVER_x0020_LEVEL3_x0020_EMAI"]=approvers[0]["Approver4Email"];
+          formData["Notification1"]=approvers[0]["Notification1"];
+          formData["Notification2"]=approvers[0]["Notification2"];
+          formData["Notification3"]=approvers[0]["Notification3"]; 
+        }
+    }else  if(this.state.formData.CHILLI_x0020_RELATED_x0020_PURCH == "YES"){
+        //formData.APPROVAL_x0020_STATUS= WorkFlowStatus.WAITINGFORPROCUREMENTLEADAPPROVAL;
+        let approvers1:any=SPAApprovers.filter((x:any)=>x.Title == "Chilli Related Purchase");
+        if(approvers1!=null && approvers1.length>0){
+          formData["APPROVER_x0020_LEVEL1_x0020_NAME"]=approvers1[0]["Approver1Name"];
+          formData["APPROVER_x0020_LEVEL1_x0020_EMAI"]=approvers1[0]["Approver1Email"];
+        }
 
-    let approvers:any=SPAApprovers.filter((x:any)=>x.Title == condition);
+        let approvers:any=SPAApprovers.filter((x:any)=>x.Title == condition);
+        if(approvers!=null && approvers.length>0){
+          formData["APPROVER_x0020_LEVEL2_x0020_NAME"]=approvers[0]["Approver2Name"];
+          formData["APPROVER_x0020_LEVEL2_x0020_EMAI"]=approvers[0]["Approver2Email"];
+          formData["APPROVER_x0020_LEVEL3_x0020_NAME"]=approvers[0]["Approver3Name"];
+          formData["APPROVER_x0020_LEVEL3_x0020_EMAI"]=approvers[0]["Approver3Email"];
+          formData["APPROVER_x0020_LEVEL4_x0020_NAME"]=approvers[0]["Approver4Name"];
+          formData["APPROVER_x0020_LEVEL4_x0020_EMAI"]=approvers[0]["Approver4Email"];
+          formData["Notification1"]=approvers[0]["Notification1"];
+          formData["Notification2"]=approvers[0]["Notification2"];
+          formData["Notification3"]=approvers[0]["Notification3"]; 
+        }
+
+    }else{
+      let approvers:any=SPAApprovers.filter((x:any)=>x.Title == condition);
       if(approvers!=null && approvers.length>0){
         formData["APPROVER_x0020_LEVEL1_x0020_NAME"]=approvers[0]["Approver1Name"];
         formData["APPROVER_x0020_LEVEL1_x0020_EMAI"]=approvers[0]["Approver1Email"];
@@ -465,6 +510,8 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
         formData["Notification2"]=approvers[0]["Notification2"];
         formData["Notification3"]=approvers[0]["Notification3"]; 
       }
+    }
+     
   }
 
   public onDeleteAttachment(item:any){
@@ -531,6 +578,7 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
   }
  
   public async onApproveReject(){
+     let cc:any="",notificationUserNames:any="",approvedUsers:any="",nextApprover:any="";
     if(this.state.updateItemId!=0){
       if((this.state.approveRejectAction == "Reject" && (this.state.ApprovalComments!=null && this.state.ApprovalComments!="")) || this.state.approveRejectAction == "Approved"){
         this.setState({loading:true,hideApproveRejectDig:true});
@@ -539,10 +587,15 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
    
         switch(this.state.existingItem[0].APPROVAL_x0020_STATUS){
           case WorkFlowStatus.ENTRYLEVEL1COMPLETEDWAITINGFORENTRYLEVEL2 :{
-              formData.APPROVAL_x0020_STATUS=WorkFlowStatus.WAITINGFORAPPROVAL1;
-              to=this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_EMAI;
-              nextApproverName=this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_NAME;
-              formData.APPROVER1_x0020_COMMENTS=this.state.ApprovalComments;
+              if(this.state.existingItem[0].ENTEY_x0020_LEVEL2_x0020_REQUIRE=="YES" && this.state.existingItem[0].CHILLI_x0020_RELATED_x0020_PURCH == "YES"){
+                formData.APPROVAL_x0020_STATUS=WorkFlowStatus.WAITINGFORAPPROVAL1;
+                to=this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_EMAI;
+                nextApproverName=this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_NAME;
+              }else{
+                formData.APPROVAL_x0020_STATUS=WorkFlowStatus.WAITINGFORAPPROVAL2;
+                to=this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_EMAI;
+                nextApproverName=this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_NAME;
+              }
           }
           break; 
 
@@ -553,33 +606,70 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
               nextApproverName=this.state.existingItem[0].Author.Title;
               formData.PL_x0020_REASON_x0020_FOR_x0020_=this.state.ApprovalComments;
             } else {
-              formData.APPROVAL_x0020_STATUS=WorkFlowStatus.PROCUREMENTAPPROVALCOMPLETED;
-              to=this.state.existingItem[0].Author.EMail;
-              nextApproverName=this.state.existingItem[0].Author.Title;
-              formData.PL_x0020_COMMENTS=this.state.ApprovalComments;
+              if(this.state.existingItem[0].ENTEY_x0020_LEVEL2_x0020_REQUIRE=="YES"){
+                formData.APPROVAL_x0020_STATUS= WorkFlowStatus.ENTRYLEVEL1COMPLETEDWAITINGFORENTRYLEVEL2;
+                nextApproverName=this.state.existingItem[0]["ENTEY_x0020_LEVEL2_x0020_NAME"];
+                to=this.state.existingItem[0]["ENTEY_x0020_LEVEL2_x0020_EMAIL"]
+                formData.APPROVER1_x0020_COMMENTS=this.state.ApprovalComments;
+                let Entry2:any=this.state.SPAApprovers.filter((c:any)=>c.Title == "ENTEY LEVEL2");
+                if(Entry2!=null && Entry2.length>0){
+                  if(Entry2[0]["Level2CCMail"]!=null && Entry2[0]["Level2CCMail"]!="")
+                    cc=Entry2[0]["Level2CCMail"];
+                }
+              }else{
+                if(this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_EMAI!="" && this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_EMAI!=null){
+                  formData.APPROVAL_x0020_STATUS=WorkFlowStatus.WAITINGFORAPPROVAL2;
+                  to=this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_EMAI;
+                  nextApproverName=this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_NAME;
+                  formData.APPROVER1_x0020_COMMENTS=this.state.ApprovalComments;
+                }else{
+                  formData.APPROVAL_x0020_STATUS=WorkFlowStatus.PROCUREMENTAPPROVALCOMPLETED;
+                  to=this.state.existingItem[0].Author.EMail;
+                  nextApproverName=this.state.existingItem[0].Author.Title;
+                  formData.PL_x0020_COMMENTS=this.state.ApprovalComments;
+                }
+              }
             }
           }
           break;
 
           case WorkFlowStatus.WAITINGFORAPPROVAL1:{
+            let checkLevel2=false;
             if(this.state.approveRejectAction =="Reject"){
               formData.APPROVAL_x0020_STATUS=WorkFlowStatus.APPROVER1REJECTED;
               to=this.state.existingItem[0].Author.EMail;
               nextApproverName=this.state.existingItem[0].Author.Title;
               formData.APPROVER1_x0020_REASON_x0020_FOR=this.state.ApprovalComments;
             } else {
-              if(this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_EMAI!="" && this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_EMAI!=null){
-                formData.APPROVAL_x0020_STATUS=WorkFlowStatus.WAITINGFORAPPROVAL2;
-                to=this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_EMAI;
-                nextApproverName=this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_NAME;
+              if(this.state.existingItem[0].ENTEY_x0020_LEVEL2_x0020_REQUIRE=="YES" && this.state.existingItem[0].CHILLI_x0020_RELATED_x0020_PURCH== "YES"){
+                checkLevel2=true;
+              }else if(this.state.existingItem[0].ENTEY_x0020_LEVEL2_x0020_REQUIRE=="YES"){
+                formData.APPROVAL_x0020_STATUS= WorkFlowStatus.ENTRYLEVEL1COMPLETEDWAITINGFORENTRYLEVEL2;
+                nextApproverName=this.state.existingItem[0]["ENTEY_x0020_LEVEL2_x0020_NAME"];
+                to=this.state.existingItem[0]["ENTEY_x0020_LEVEL2_x0020_EMAIL"]; 
                 formData.APPROVER1_x0020_COMMENTS=this.state.ApprovalComments;
+                let Entry2:any=this.state.SPAApprovers.filter((c:any)=>c.Title == "ENTEY LEVEL2");
+                if(Entry2!=null && Entry2.length>0){
+                   if(Entry2[0]["Level2CCMail"]!=null && Entry2[0]["Level2CCMail"]!="")
+                      cc=Entry2[0]["Level2CCMail"];
+                }
               }else{
-                formData.APPROVAL_x0020_STATUS=WorkFlowStatus.PROCUREMENTAPPROVALCOMPLETED;
-                to=this.state.existingItem[0].Author.EMail;
-                nextApproverName=this.state.existingItem[0].Author.Title;
-                formData.APPROVER1_x0020_COMMENTS=this.state.ApprovalComments;
+                checkLevel2=true;
               }
-              
+
+              if(checkLevel2){
+                if(this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_EMAI!="" && this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_EMAI!=null){
+                  formData.APPROVAL_x0020_STATUS=WorkFlowStatus.WAITINGFORAPPROVAL2;
+                  to=this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_EMAI;
+                  nextApproverName=this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_NAME;
+                  formData.APPROVER1_x0020_COMMENTS=this.state.ApprovalComments;
+                }else{
+                  formData.APPROVAL_x0020_STATUS=WorkFlowStatus.PROCUREMENTAPPROVALCOMPLETED;
+                  to=this.state.existingItem[0].Author.EMail;
+                  nextApproverName=this.state.existingItem[0].Author.Title;
+                  formData.APPROVER1_x0020_COMMENTS=this.state.ApprovalComments;
+                }
+              }
             }
           }
           break;
@@ -614,6 +704,28 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
               nextApproverName=this.state.existingItem[0].Author.Title;
               formData.APPROVER3_x0020_REASON_x0020_FOR=this.state.ApprovalComments;
             } else {
+              if(this.state.existingItem[0].APPROVER_x0020_LEVEL4_x0020_EMAI!="" && this.state.existingItem[0].APPROVER_x0020_LEVEL4_x0020_EMAI!=null){
+                formData.APPROVAL_x0020_STATUS=WorkFlowStatus.WAITINGFORAPPROVAL4;
+                to=this.state.existingItem[0].APPROVER_x0020_LEVEL4_x0020_EMAI;
+                nextApproverName=this.state.existingItem[0].APPROVER_x0020_LEVEL4_x0020_NAME;
+                formData.APPROVER2_x0020_COMMENTS=this.state.ApprovalComments;
+              }else{
+                formData.APPROVAL_x0020_STATUS=WorkFlowStatus.PROCUREMENTAPPROVALCOMPLETED;
+                to=this.state.existingItem[0].Author.EMail;
+                nextApproverName=this.state.existingItem[0].Author.Title;
+                formData.APPROVER3_x0020_COMMENTS=this.state.ApprovalComments;
+              }
+            }
+          }
+          break;
+
+           case WorkFlowStatus.WAITINGFORAPPROVAL4:{
+            if(this.state.approveRejectAction =="Reject"){
+              formData.APPROVAL_x0020_STATUS=WorkFlowStatus.APPROVER4REJECTED;
+              to=this.state.existingItem[0].Author.EMail;
+              nextApproverName=this.state.existingItem[0].Author.Title;
+              formData.APPROVER3_x0020_REASON_x0020_FOR=this.state.ApprovalComments;
+            } else {
               formData.APPROVAL_x0020_STATUS=WorkFlowStatus.PROCUREMENTAPPROVALCOMPLETED;
               to=this.state.existingItem[0].Author.EMail;
               nextApproverName=this.state.existingItem[0].Author.Title;
@@ -634,13 +746,79 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
             await this.spService.addAttachmentListItem(this.props.listName,this.state.updateItemId,item.fileName,fileResultContent);
           }
         }
+ 
+        if(formData.APPROVAL_x0020_STATUS==WorkFlowStatus.PROCUREMENTAPPROVALCOMPLETED){ 
+          if(this.state.existingItem[0].Notification1 !="" && this.state.existingItem[0].Notification1 !=null){ cc+=this.state.existingItem[0].Notification1.split(',')[1]+";"; notificationUserNames+=this.state.existingItem[0].Notification1.split(',')[0]+","}
+          if(this.state.existingItem[0].Notification2 !="" && this.state.existingItem[0].Notification2 !=null){ cc+=this.state.existingItem[0].Notification2.split(',')[1]+";"; notificationUserNames+=this.state.existingItem[0].Notification1.split(',')[0]+","}
+          if(this.state.existingItem[0].Notification3 !="" && this.state.existingItem[0].Notification3 !=null){ cc+=this.state.existingItem[0].Notification3.split(',')[1]+";"; notificationUserNames+=this.state.existingItem[0].Notification1.split(',')[0]+","}
+        }
 
-        let cc:any="";
-        if(this.state.existingItem[0].Notification1 !="" && this.state.existingItem[0].Notification1 !=null) cc+=this.state.existingItem[0].Notification1+";";
-        if(this.state.existingItem[0].Notification2 !="" && this.state.existingItem[0].Notification2 !=null) cc+=this.state.existingItem[0].Notification2+";";
-        if(this.state.existingItem[0].Notification3 !="" && this.state.existingItem[0].Notification3 !=null) cc+=this.state.existingItem[0].Notification3+";";
+        if(this.state.approveRejectAction !="Reject"){
+          switch(this.state.existingItem[0].APPROVAL_x0020_STATUS){
+            case WorkFlowStatus.ENTRYLEVEL1COMPLETEDWAITINGFORENTRYLEVEL2 :{
+              if(this.state.existingItem[0].ENTEY_x0020_LEVEL2_x0020_REQUIRE=="YES" &&  this.state.existingItem[0].CHILLI_x0020_RELATED_x0020_PURCH == "YES"){
+                if(this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_NAME !=null){ nextApprover+=this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_NAME+"<br />"}
+              }else{
+                if(this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_NAME !=null){ approvedUsers+=this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_NAME+"<br />"}
+              }
 
-        await this.sendEmail(to,cc, formData.APPROVAL_x0020_STATUS,"",this.state.updateItemId,nextApproverName);
+              approvedUsers+=this.state.existingItem[0]["ENTEY_x0020_LEVEL2_x0020_NAME"];
+              if(this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_NAME !=null){ nextApprover+=this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_NAME+"<br />"}
+              if(this.state.existingItem[0].APPROVER_x0020_LEVEL3_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL3_x0020_NAME !=null){ nextApprover+=this.state.existingItem[0].APPROVER_x0020_LEVEL3_x0020_NAME+"<br />"}
+              if(this.state.existingItem[0].APPROVER_x0020_LEVEL4_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL4_x0020_NAME !=null){ nextApprover+=this.state.existingItem[0].APPROVER_x0020_LEVEL4_x0020_NAME+"<br />"}
+             
+            }
+            break;
+
+            case WorkFlowStatus.WAITINGFORAPPROVAL1:{
+              if(this.state.existingItem[0].ENTEY_x0020_LEVEL2_x0020_REQUIRE=="YES" &&  this.state.existingItem[0].CHILLI_x0020_RELATED_x0020_PURCH == "YES"){
+                approvedUsers+=this.state.existingItem[0]["ENTEY_x0020_LEVEL2_x0020_NAME"];
+                if(this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_NAME !=null){ approvedUsers+=this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_NAME+"<br />"}
+                if(this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_NAME !=null){ nextApprover+=this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_NAME+"<br />"}
+                if(this.state.existingItem[0].APPROVER_x0020_LEVEL3_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL3_x0020_NAME !=null){ nextApprover+=this.state.existingItem[0].APPROVER_x0020_LEVEL3_x0020_NAME+"<br />"}
+                if(this.state.existingItem[0].APPROVER_x0020_LEVEL4_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL4_x0020_NAME !=null){ nextApprover+=this.state.existingItem[0].APPROVER_x0020_LEVEL4_x0020_NAME+"<br />"}
+              } else  if(this.state.existingItem[0].ENTEY_x0020_LEVEL2_x0020_REQUIRE=="YES"){
+                  if(this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_NAME !=null){ approvedUsers+=this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_NAME+"<br />"}
+                  nextApprover+=this.state.existingItem[0]["ENTEY_x0020_LEVEL2_x0020_NAME"];
+                  if(this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_NAME !=null){ nextApprover+=this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_NAME+"<br />"}
+                  if(this.state.existingItem[0].APPROVER_x0020_LEVEL3_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL3_x0020_NAME !=null){ nextApprover+=this.state.existingItem[0].APPROVER_x0020_LEVEL3_x0020_NAME+"<br />"}
+                  if(this.state.existingItem[0].APPROVER_x0020_LEVEL4_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL4_x0020_NAME !=null){ nextApprover+=this.state.existingItem[0].APPROVER_x0020_LEVEL4_x0020_NAME+"<br />"}
+              }else{
+                  if(this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_NAME !=null){ approvedUsers+=this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_NAME+"<br />"}
+                  if(this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_NAME !=null){ nextApprover+=this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_NAME+"<br />"}
+                  if(this.state.existingItem[0].APPROVER_x0020_LEVEL3_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL3_x0020_NAME !=null){ nextApprover+=this.state.existingItem[0].APPROVER_x0020_LEVEL3_x0020_NAME+"<br />"}
+                  if(this.state.existingItem[0].APPROVER_x0020_LEVEL4_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL4_x0020_NAME !=null){ nextApprover+=this.state.existingItem[0].APPROVER_x0020_LEVEL4_x0020_NAME+"<br />"}
+              }
+            }
+            break;
+
+            case WorkFlowStatus.WAITINGFORAPPROVAL2:{
+              if(this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_NAME !=null){ approvedUsers+=this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_NAME+"<br />"}
+              if(this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_NAME !=null){ approvedUsers+=this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_NAME+"<br />"}
+              if(this.state.existingItem[0].APPROVER_x0020_LEVEL3_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL3_x0020_NAME !=null){ nextApprover+=this.state.existingItem[0].APPROVER_x0020_LEVEL3_x0020_NAME+"<br />"}
+              if(this.state.existingItem[0].APPROVER_x0020_LEVEL4_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL4_x0020_NAME !=null){ nextApprover+=this.state.existingItem[0].APPROVER_x0020_LEVEL4_x0020_NAME+"<br />"}
+            }
+            break;
+
+            case WorkFlowStatus.WAITINGFORAPPROVAL3:{
+              if(this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_NAME !=null){ approvedUsers+=this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_NAME+"<br />"}
+              if(this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_NAME !=null){ approvedUsers+=this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_NAME+"<br />"}
+              if(this.state.existingItem[0].APPROVER_x0020_LEVEL3_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL3_x0020_NAME !=null){ approvedUsers+=this.state.existingItem[0].APPROVER_x0020_LEVEL3_x0020_NAME+"<br />"}
+              if(this.state.existingItem[0].APPROVER_x0020_LEVEL4_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL4_x0020_NAME !=null){ nextApprover+=this.state.existingItem[0].APPROVER_x0020_LEVEL4_x0020_NAME+"<br />"}
+            }
+            break;
+
+             case WorkFlowStatus.WAITINGFORAPPROVAL4:{
+              if(this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_NAME !=null){ approvedUsers+=this.state.existingItem[0].APPROVER_x0020_LEVEL1_x0020_NAME+"<br />"}
+              if(this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_NAME !=null){ approvedUsers+=this.state.existingItem[0].APPROVER_x0020_LEVEL2_x0020_NAME+"<br />"}
+              if(this.state.existingItem[0].APPROVER_x0020_LEVEL3_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL3_x0020_NAME !=null){ approvedUsers+=this.state.existingItem[0].APPROVER_x0020_LEVEL3_x0020_NAME+"<br />"}
+              if(this.state.existingItem[0].APPROVER_x0020_LEVEL4_x0020_NAME !="" && this.state.existingItem[0].APPROVER_x0020_LEVEL4_x0020_NAME !=null){ approvedUsers+=this.state.existingItem[0].APPROVER_x0020_LEVEL4_x0020_NAME+"<br />"}
+            }
+            break;
+          }
+        }
+
+        await this.sendEmail(to,cc, formData.APPROVAL_x0020_STATUS,"",this.state.updateItemId,nextApproverName,approvedUsers,nextApprover,notificationUserNames);
 
         if(this.state.approveRejectAction == "Reject"){
           this.setState({loading:false,hideApproveRejectDig:true,hideMsgDialog:false,message:`SPA Details Form has been rejected successfully`});
@@ -654,9 +832,13 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
     }
   }  
 
-  public async sendEmail(to:any,cc:any,status:any,createdBy:any,id:any,nextApproverName:any){
+  public async sendEmail(to:any,cc:any,status:any,createdBy:any,id:any,nextApproverName:any,approvedUsers:any,nextApprovers:any,notificationUserNames?:any){
     let emailBody:any="",subject:any="",subjectMaster:any="";
     let createdByUser=createdBy!=""?createdBy:this.state.existingItem[0].Author.Title;
+
+    if(notificationUserNames){
+      createdByUser=createdByUser+","+notificationUserNames;
+    }
     
     let EmailTemplate:any=await this.spService.getListItem(ListTitles.EmailTemplate,"","","");
     let emailTemplate:any=[];
@@ -669,8 +851,8 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
         emailTemplate=EmailTemplate.filter((x:any)=>x.Title == "Approval"); 
     
     if(emailTemplate.length>0){
-      subject=this.replacePlaceholders(emailTemplate[0].Subject,createdByUser,id,nextApproverName,subjectMaster) ;
-      emailBody=this.replacePlaceholders(emailTemplate[0].Body,createdByUser,id,nextApproverName,subjectMaster) ;
+      subject=this.replacePlaceholders(emailTemplate[0].Subject,createdByUser,id,nextApproverName,subjectMaster,approvedUsers,nextApprovers) ;
+      emailBody=this.replacePlaceholders(emailTemplate[0].Body,createdByUser,id,nextApproverName,subjectMaster,approvedUsers,nextApprovers) ;
     }
      
     let FlowUrls:any=await this.spService.getListItem(ListTitles.FlowUrls,"","","Title eq 'SendEmail'");
@@ -694,13 +876,13 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
 
       let sendAuthor:any=true;
       if(this.state.approveRejectAction =="Reject") { sendAuthor=false; }  
-      if(this.state.existingItem.length>0 && this.state.formData.APPROVAL_x0020_STATUS ==  WorkFlowStatus.PROCUREMENTAPPROVALCOMPLETED){ sendAuthor=false;  }
+      if(status == WorkFlowStatus.PROCUREMENTAPPROVALCOMPLETED || (this.state.existingItem.length>0 &&  this.state.formData.APPROVAL_x0020_STATUS ==  WorkFlowStatus.PROCUREMENTAPPROVALCOMPLETED)){ sendAuthor=false;  }
 
       if(sendAuthor){
         let AuthorCopy_emailTemplate=EmailTemplate.filter((x:any)=>x.Title == "AuthorCopy"); 
         if(emailTemplate.length>0){
-          let AuthorCopy_subject=this.replacePlaceholders(AuthorCopy_emailTemplate[0].Subject,createdByUser,id,nextApproverName,subjectMaster) ;
-          let AuthorCopy_emailBody=this.replacePlaceholders(AuthorCopy_emailTemplate[0].Body,createdByUser,id,nextApproverName,subjectMaster) ;
+          let AuthorCopy_subject=this.replacePlaceholders(AuthorCopy_emailTemplate[0].Subject,createdByUser,id,nextApproverName,subjectMaster,approvedUsers,nextApprovers) ;
+          let AuthorCopy_emailBody=this.replacePlaceholders(AuthorCopy_emailTemplate[0].Body,createdByUser,id,nextApproverName,subjectMaster,approvedUsers,nextApprovers) ;
           const requestHeader1:Headers=new Headers();
           requestHeader1.append('Content-type','application/json');
           const httpClientOptions1:IHttpClientOptions={
@@ -721,13 +903,32 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
     }
   }
 
-  public replacePlaceholders(orignalText:any,createdByUser:any,id:any,nextApproverName:any,subjectMaster:any){
+  public replacePlaceholders(orignalText:any,createdByUser:any,id:any,nextApproverName:any,subjectMaster:any,approvedUser:any,nextApprovers:any){
     orignalText=orignalText.replace("$Author",createdByUser);
     orignalText=orignalText.replace("$Id",id).replace("$Id",id).replace("$Id",id);
     orignalText=orignalText.replace("$NextApprover",nextApproverName);
     orignalText=orignalText.replace("$CurrentUser",this.state.currentUser.Title);
     orignalText=orignalText.replace("$SubjectMaster",subjectMaster);
+    orignalText=orignalText.replace("$ApprovedUser",approvedUser);
+    orignalText=orignalText.replace("$NextApprovers",nextApprovers);
     
+    if(this.state.existingItem!=null && this.state.existingItem.length>0){
+      let supplier:any=this.state.existingItem[0]["EXISTING_x0020_SUPPLIER_x0020_NA"]!=null && this.state.existingItem[0]["EXISTING_x0020_SUPPLIER_x0020_NA"]!=""?this.state.existingItem[0]["EXISTING_x0020_SUPPLIER_x0020_NA"]:this.state.existingItem[0]["NEW_x0020_SUPPLIER_x0020_NAME"];
+      let product:any=this.state.existingItem[0]["EXISTING_x0020_PRODUCT_x0020_NAM"]!=null && this.state.existingItem[0]["EXISTING_x0020_PRODUCT_x0020_NAM"]!=""?this.state.existingItem[0]["EXISTING_x0020_PRODUCT_x0020_NAM"]:this.state.existingItem[0]["NEW_x0020_PRODUCT_x0020_NAME"];
+      orignalText=orignalText.replace("$Supplier",supplier);
+      orignalText=orignalText.replace("$Product",product);
+      if(typeof this.state.formData.UOM == "object") 
+        orignalText=orignalText.replace("$UOM",(this.state.formData.UOM.length>0 ? this.state.formData.UOM[0].value:""));
+      else
+        orignalText=orignalText.replace("$UOM",this.state.formData.UOM);
+      
+     }else{
+      let supplier:any=this.state.formData["EXISTING_x0020_SUPPLIER_x0020_NA"]!=null && this.state.formData["EXISTING_x0020_SUPPLIER_x0020_NA"]!=""?this.state.formData["EXISTING_x0020_SUPPLIER_x0020_NA"]:this.state.formData["NEW_x0020_SUPPLIER_x0020_NAME"];
+      let product:any=this.state.formData["EXISTING_x0020_PRODUCT_x0020_NAM"]!=null && this.state.formData["EXISTING_x0020_PRODUCT_x0020_NAM"]!=""?this.state.formData["EXISTING_x0020_PRODUCT_x0020_NAM"]:this.state.formData["NEW_x0020_PRODUCT_x0020_NAME"];
+      orignalText=orignalText.replace("$Supplier",supplier);
+      orignalText=orignalText.replace("$Product",product);
+    }
+
     Object.keys(this.state.formData).forEach((key:any)=>{
       try{
       orignalText=orignalText.replace('${'+key+'}',this.state.formData[key]);
@@ -927,7 +1128,7 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
               <div><Label>ENTEY LEVEL2 REQUIRED <span className='warning'>*</span></Label> <Select className={this.state.showErrorBorder && this.state.formData.ENTEY_x0020_LEVEL2_x0020_REQUIRE ==""? "custdropdown required":"notrequired"}  defaultValue={this.state.formData.ENTEY_x0020_LEVEL2_x0020_REQUIRE} isDisabled={this.state.disableEdit} onChange={this.onDropdownChangeEvent.bind(this,"ENTEY_x0020_LEVEL2_x0020_REQUIRE")} options={this.state.Master_dropdownValue["ENTEY LEVEL2 REQUIRED"]} /></div>
               {(this.state.formData.ENTEY_x0020_LEVEL2_x0020_REQUIRE =="YES" ||(this.state.existingItem.length>0 &&  this.state.formData.ENTEY_x0020_LEVEL2_x0020_REQUIRE[0].value == "YES")) && <div><Label>ENTEY LEVEL2 NAME <span className='warning'>*</span></Label> <TextField  disabled  value={this.state.formData.ENTEY_x0020_LEVEL2_x0020_NAME} onChange={this.onTextBoxChangeEvent.bind(this,"ENTEY_x0020_LEVEL2_x0020_NAME")}  /></div>}
            </div>
-          {this.state.existingItem.length>0 && this.state.existingItem[0].APPROVAL_x0020_STATUS== WorkFlowStatus.ENTRYLEVEL1COMPLETEDWAITINGFORENTRYLEVEL2 && this.state.existingItem[0].Author.Id != this.state.currentUser.Id && this.state.currentUser.Email.toLowerCase()!= "sreekanth.shanmughan@abmauri.com" && 
+          {this.state.existingItem.length>0 &&  this.state.existingItem[0].Author.Id != this.state.currentUser.Id && this.state.currentUser.Email.toLowerCase()!= "sreekanth.shanmughan@abmauri.com" && //this.state.existingItem[0].APPROVAL_x0020_STATUS== WorkFlowStatus.ENTRYLEVEL1COMPLETEDWAITINGFORENTRYLEVEL2 &&
             <><div className='twoColumn' >
               <div><Label>OCN SELLING PRICE <span className='warning'>*</span></Label> <TextField type='Number' className={this.state.showErrorBorder && this.state.formData.OCN_x0020_SELLING_x0020_PRICE ==""? "required":"notrequired"} disabled={this.state.existingItem.length>0 && this.state.existingItem[0].APPROVAL_x0020_STATUS!= WorkFlowStatus.ENTRYLEVEL1COMPLETEDWAITINGFORENTRYLEVEL2} value={this.state.formData.OCN_x0020_SELLING_x0020_PRICE} onChange={this.onTextBoxChangeEvent.bind(this,"OCN_x0020_SELLING_x0020_PRICE")}  /></div>
               <div><Label>MARGIN PERCENTAGE <span className='warning'>*</span></Label> <TextField type='Number' className={this.state.showErrorBorder && this.state.formData.MARGIN_x0020_PERCENTAGE ==""? "required":"notrequired"} disabled={this.state.existingItem.length>0 &&  this.state.existingItem[0].APPROVAL_x0020_STATUS!= WorkFlowStatus.ENTRYLEVEL1COMPLETEDWAITINGFORENTRYLEVEL2} value={this.state.formData.MARGIN_x0020_PERCENTAGE} onChange={this.onTextBoxChangeEvent.bind(this,"MARGIN_x0020_PERCENTAGE")}  /></div>
@@ -952,7 +1153,7 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
                 /> 
               </div>
             </div>}
-            <div style={{display:"inline-flex"}}>
+            <div style={{display:"flex",flexWrap:"wrap"}}>
                 {this.state.filePickerResult.length>0 && 
                   this.state.filePickerResult.map((item:any)=>{
                     return <div className='custTable'>
