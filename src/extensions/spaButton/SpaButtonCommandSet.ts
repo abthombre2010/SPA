@@ -41,7 +41,10 @@ export default class SpaButtonCommandSet extends BaseListViewCommandSet<ISpaButt
   public onExecute(event: IListViewCommandSetExecuteEventParameters): void {
     switch (event.itemId) {
       case 'COMMAND_CustomNew':
-       window.location.href=  this.context.pageContext.web.absoluteUrl+"/SitePages/NewSPAForm.aspx";
+        if(this.context.pageContext.list?.title.toLowerCase().indexOf('prod') !=-1)
+          window.location.href=  this.context.pageContext.web.absoluteUrl+"/SitePages/SPAForm.aspx";
+      else 
+         window.location.href=  this.context.pageContext.web.absoluteUrl+"/SitePages/NewSPAForm.aspx";
       break;
       default:
         throw new Error('Unknown command');
