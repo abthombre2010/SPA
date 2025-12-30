@@ -7,4 +7,5 @@ export interface ISpaFormProps {
     context:any;
   listName:any;
   cancelPageUrl:any;
+   environment:any;
 }

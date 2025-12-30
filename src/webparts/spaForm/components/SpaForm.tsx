@@ -514,13 +514,19 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
      
   }
 
-  public onDeleteAttachment(item:any){
+  public async onDeleteAttachment(item:any){
     let fileAttachment=this.state.filePickerResult;
     let index=fileAttachment.findIndex((x:any)=>x.fileName == item.fileName);
     if (index > -1){
       fileAttachment.splice(index, 1);  
       this.setState({filePickerResult:fileAttachment});
     } 
+
+    if(this.state.updateItemId!=0){
+      await  this.spService.deleteAttachment(this.props.listName,this.state.updateItemId,item["FileName"]);
+      let existingItem:any=await this.spService.getListItem(this.props.listName,"*,AttachmentFiles,Author/Title,Author/EMail,Author/Id","AttachmentFiles,Author",`Id eq ${this.state.updateItemId}`);
+      this.setState({existingItem:existingItem});
+    }
   }
 
   public validateForm(){
@@ -855,49 +861,56 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
       emailBody=this.replacePlaceholders(emailTemplate[0].Body,createdByUser,id,nextApproverName,subjectMaster,approvedUsers,nextApprovers) ;
     }
      
-    let FlowUrls:any=await this.spService.getListItem(ListTitles.FlowUrls,"","","Title eq 'SendEmail'");
-    if(FlowUrls.length>0){
+    if(this.props.environment!="UAT"){
+      let FlowUrls:any=await this.spService.getListItem(ListTitles.FlowUrls,"","","Title eq 'SendEmail'");
+      if(FlowUrls.length>0){
 
-      const requestHeader:Headers=new Headers();
-      requestHeader.append('Content-type','application/json');
-      const httpClientOptions:IHttpClientOptions={
-        body:JSON.stringify({
-              "to":to,
-              "cc":cc,
-              "subject":subject,
-              "body":emailBody
-            }),
-        headers:requestHeader
-      };
+        if(status == WorkFlowStatus.PROCUREMENTAPPROVALCOMPLETED){
+          if(cc==undefined || cc==null) cc="";
+          cc+="Deepak.KP@abmauri.com";
+        } 
 
-      await this.props.context.httpClient.post(FlowUrls[0].Url,HttpClient.configurations.v1,httpClientOptions).then((response:HttpClientResponse)=>{
-        console.log(response);
-      });
-
-      let sendAuthor:any=true;
-      if(this.state.approveRejectAction =="Reject") { sendAuthor=false; }  
-      if(status == WorkFlowStatus.PROCUREMENTAPPROVALCOMPLETED || (this.state.existingItem.length>0 &&  this.state.formData.APPROVAL_x0020_STATUS ==  WorkFlowStatus.PROCUREMENTAPPROVALCOMPLETED)){ sendAuthor=false;  }
-
-      if(sendAuthor){
-        let AuthorCopy_emailTemplate=EmailTemplate.filter((x:any)=>x.Title == "AuthorCopy"); 
-        if(emailTemplate.length>0){
-          let AuthorCopy_subject=this.replacePlaceholders(AuthorCopy_emailTemplate[0].Subject,createdByUser,id,nextApproverName,subjectMaster,approvedUsers,nextApprovers) ;
-          let AuthorCopy_emailBody=this.replacePlaceholders(AuthorCopy_emailTemplate[0].Body,createdByUser,id,nextApproverName,subjectMaster,approvedUsers,nextApprovers) ;
-          const requestHeader1:Headers=new Headers();
-          requestHeader1.append('Content-type','application/json');
-          const httpClientOptions1:IHttpClientOptions={
+        const requestHeader:Headers=new Headers();
+        requestHeader.append('Content-type','application/json');
+        const httpClientOptions:IHttpClientOptions={
           body:JSON.stringify({
-                "to":this.state.existingItem.length>0? this.state.existingItem[0].Author.EMail:this.state.currentUser.Email,
-                "cc":"",
-                "subject":AuthorCopy_subject,
-                "body":AuthorCopy_emailBody
+                "to":to,
+                "cc":cc,
+                "subject":subject,
+                "body":emailBody
               }),
-          headers:requestHeader1
+          headers:requestHeader
         };
 
-        await this.props.context.httpClient.post(FlowUrls[0].Url,HttpClient.configurations.v1,httpClientOptions1).then((response:HttpClientResponse)=>{
+        await this.props.context.httpClient.post(FlowUrls[0].Url,HttpClient.configurations.v1,httpClientOptions).then((response:HttpClientResponse)=>{
           console.log(response);
         });
+
+        let sendAuthor:any=true;
+        if(this.state.approveRejectAction =="Reject") { sendAuthor=false; }  
+        if(status == WorkFlowStatus.PROCUREMENTAPPROVALCOMPLETED || (this.state.existingItem.length>0 &&  this.state.formData.APPROVAL_x0020_STATUS ==  WorkFlowStatus.PROCUREMENTAPPROVALCOMPLETED)){ sendAuthor=false;  }
+
+        if(sendAuthor){
+          let AuthorCopy_emailTemplate=EmailTemplate.filter((x:any)=>x.Title == "AuthorCopy"); 
+          if(emailTemplate.length>0){
+            let AuthorCopy_subject=this.replacePlaceholders(AuthorCopy_emailTemplate[0].Subject,createdByUser,id,nextApproverName,subjectMaster,approvedUsers,nextApprovers) ;
+            let AuthorCopy_emailBody=this.replacePlaceholders(AuthorCopy_emailTemplate[0].Body,createdByUser,id,nextApproverName,subjectMaster,approvedUsers,nextApprovers) ;
+            const requestHeader1:Headers=new Headers();
+            requestHeader1.append('Content-type','application/json');
+            const httpClientOptions1:IHttpClientOptions={
+            body:JSON.stringify({
+                  "to":this.state.existingItem.length>0? this.state.existingItem[0].Author.EMail:this.state.currentUser.Email,
+                  "cc":"",
+                  "subject":AuthorCopy_subject,
+                  "body":AuthorCopy_emailBody
+                }),
+            headers:requestHeader1
+          };
+
+          await this.props.context.httpClient.post(FlowUrls[0].Url,HttpClient.configurations.v1,httpClientOptions1).then((response:HttpClientResponse)=>{
+            console.log(response);
+          });
+          }
         }
       }
     }
@@ -927,6 +940,10 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
       let product:any=this.state.formData["EXISTING_x0020_PRODUCT_x0020_NAM"]!=null && this.state.formData["EXISTING_x0020_PRODUCT_x0020_NAM"]!=""?this.state.formData["EXISTING_x0020_PRODUCT_x0020_NAM"]:this.state.formData["NEW_x0020_PRODUCT_x0020_NAME"];
       orignalText=orignalText.replace("$Supplier",supplier);
       orignalText=orignalText.replace("$Product",product);
+        if(typeof this.state.formData.UOM == "object") 
+        orignalText=orignalText.replace("$UOM",(this.state.formData.UOM.length>0 ? this.state.formData.UOM[0].value:""));
+      else
+        orignalText=orignalText.replace("$UOM",this.state.formData.UOM);
     }
 
     Object.keys(this.state.formData).forEach((key:any)=>{
@@ -945,7 +962,10 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
   }
   public onSuccessMsgClick(){
     let id=this.state.updateItemId!=0?this.state.updateItemId:this.state.itemId;
-    window.location.href=this.props.context.pageContext.web.absoluteUrl+"/SitePages/NewSpaForm.aspx?formid="+id;
+    if(this.props.environment.indexOf("PROD")!=-1)
+      window.location.href=this.props.context.pageContext.web.absoluteUrl+"/SitePages/SpaForm.aspx?formid="+id;
+    else
+      window.location.href=this.props.context.pageContext.web.absoluteUrl+"/SitePages/NewSpaForm.aspx?formid="+id;
   } 
   public onCancel(){
     window.location.href=this.props.cancelPageUrl;
@@ -1038,6 +1058,9 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
               <span className='gridsectionHeader'><FontIcon  aria-label="Info" iconName="Info" className="iconClass" /> Request Information</span>
               {this.state.existingItem.length>0 && <span className="status">{this.state.existingItem[0]["APPROVAL_x0020_STATUS"]}</span>}
             </div>
+             {this.state.existingItem.length>0 && <div className='twoColumn'  style={{backgroundColor:"#e0e0e0",padding:"5px 10px",position:"relative",left:"-16px",marginRight:"10px",width:"calc(100% + 15px)",borderBottom:"1px solid #ccc"}}>
+                <div><Label>SPA WORKFLOW # <span>{this.state.existingItem[0].Id}</span></Label> </div>
+              </div>} 
             <div className='twoColumn' >
               <div><Label>REQUESTER NAME </Label> <TextField   disabled value={this.state.formData.REQUESTER_x0020_NAME?this.state.formData.REQUESTER_x0020_NAME:""} onChange={this.onTextBoxChangeEvent.bind(this,"REQUESTER_x0020_NAME")}  /></div>
               <div><Label>TEMPLATE TYPE <span className='warning'>*</span></Label> <Select className={this.state.showErrorBorder && this.state.formData.TEMPLATE_x0020_TYPE ==""? "custdropdown required":"notrequired"}  defaultValue={this.state.formData.TEMPLATE_x0020_TYPE} isDisabled={this.state.disableEdit} onChange={this.onDropdownChangeEvent.bind(this,"TEMPLATE_x0020_TYPE")} options={this.state.Master_dropdownValue["TEMPLATE TYPE"]} /></div>
@@ -1167,6 +1190,8 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
                   this.state.existingItem[0].AttachmentFiles.map((item:any)=>{
                      return <div className='custTable'>
                       <span><a target='_blank' href={item["ServerRelativeUrl"]}  data-interception="off" >{item["FileName"]}</a></span>
+                      {this.state.existingItem[0]["APPROVAL_x0020_STATUS"].toLowerCase().indexOf("reject") !=-1 && this.state.existingItem[0].Author.Id == this.state.currentUser.Id &&
+                      <FontIcon onClick={this.onDeleteAttachment.bind(this,item)} aria-label="Delete" iconName="Delete"   />}
                     </div>
                      })
                   }

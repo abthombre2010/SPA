@@ -17,6 +17,7 @@ export interface ISpaFormWebPartProps {
    context:any;
   listName:any;
   cancelPageUrl:any;
+   environment:any;
 }
 
 export default class SpaFormWebPart extends BaseClientSideWebPart<ISpaFormWebPartProps> {
@@ -35,7 +36,8 @@ export default class SpaFormWebPart extends BaseClientSideWebPart<ISpaFormWebPar
         userDisplayName: this.context.pageContext.user.displayName,
         context:this.context,
         listName:this.properties.listName,
-        cancelPageUrl:this.properties.cancelPageUrl
+        cancelPageUrl:this.properties.cancelPageUrl,
+         environment:this.properties.environment
       }
     );
 
@@ -122,6 +124,9 @@ export default class SpaFormWebPart extends BaseClientSideWebPart<ISpaFormWebPar
                 }),
                 PropertyPaneTextField('cancelPageUrl', {
                   label: "Cancel Page Url"
+                }),
+                PropertyPaneTextField('environment', {
+                  label: "Environment"
                 }),
               ]
             }

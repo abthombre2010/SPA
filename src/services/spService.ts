@@ -188,6 +188,19 @@ export default class spservices {
     return result;
   }
 
+  public async deleteAttachment(listName:any, itemId:any, fileName:any) {
+  try {
+     
+    await this.sp.web.lists
+      .getByTitle(listName)
+      .items.getById(itemId)
+      .attachmentFiles.getByName(fileName)
+      .delete();
+  } catch (error) {
+    console.error("Error deleting attachment:", error);
+  }
+}
+
   public async getCurrentUserPermission(list:any){
     let addPerm=await this.sp.web.lists.getByTitle(list).currentUserHasPermissions(PermissionKind.AddListItems);
     let deletePerm=await this.sp.web.lists.getByTitle(list).currentUserHasPermissions(PermissionKind.DeleteListItems);
