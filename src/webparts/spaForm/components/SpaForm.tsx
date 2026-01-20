@@ -444,10 +444,11 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
 
     formData.APPROVAL_x0020_STATUS= WorkFlowStatus.WAITINGFORAPPROVAL1;
 
-    if(formData.ENTEY_x0020_LEVEL2_x0020_REQUIRE=="YES" && this.state.formData.CHILLI_x0020_RELATED_x0020_PURCH == "YES"){
+    //formData.ENTEY_x0020_LEVEL2_x0020_REQUIRE=="YES" && 
+    if(this.state.formData.CHILLI_x0020_RELATED_x0020_PURCH == "YES"){
       if(parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)>0 && parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)<=4000000) condition="≤ 10,00,000";
       else condition="> 40,00,000 and ≤ 1.6 Crore"
-    } else
+    } else 
     if(formData.ENTEY_x0020_LEVEL2_x0020_REQUIRE=="YES"){
       if(parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)>0 && parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)<=4000000) condition="> 10,00,000 and ≤ 40,00,000";
       else if(parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)>4000000 && parseFloat(this.state.formData.VALUES_x0020_IN_x0020_RS)<=16000000) condition="> 40,00,000 and ≤ 1.6 Crore";
@@ -466,15 +467,23 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
     if(formData.ENTEY_x0020_LEVEL2_x0020_REQUIRE=="YES" && this.state.formData.CHILLI_x0020_RELATED_x0020_PURCH == "YES"){
        let approvers:any=SPAApprovers.filter((x:any)=>x.Title == condition);
         if(approvers!=null && approvers.length>0){
-          formData["APPROVER_x0020_LEVEL1_x0020_NAME"]=approvers[0]["Approver2Name"];
-          formData["APPROVER_x0020_LEVEL1_x0020_EMAI"]=approvers[0]["Approver2Email"];
-          formData["APPROVER_x0020_LEVEL2_x0020_NAME"]=approvers[0]["Approver3Name"];
-          formData["APPROVER_x0020_LEVEL2_x0020_EMAI"]=approvers[0]["Approver3Email"];
-          formData["APPROVER_x0020_LEVEL3_x0020_NAME"]=approvers[0]["Approver4Name"];
-          formData["APPROVER_x0020_LEVEL3_x0020_EMAI"]=approvers[0]["Approver4Email"];
+          formData["APPROVER_x0020_LEVEL1_x0020_NAME"]=approvers[0]["Approver1Name"];
+          formData["APPROVER_x0020_LEVEL1_x0020_EMAI"]=approvers[0]["Approver1Email"];
+          formData["APPROVER_x0020_LEVEL2_x0020_NAME"]=approvers[0]["Approver2Name"];
+          formData["APPROVER_x0020_LEVEL2_x0020_EMAI"]=approvers[0]["Approver2Email"];
+          formData["APPROVER_x0020_LEVEL3_x0020_NAME"]=approvers[0]["Approver3Name"];
+          formData["APPROVER_x0020_LEVEL3_x0020_EMAI"]=approvers[0]["Approver3Email"];
+          formData["APPROVER_x0020_LEVEL4_x0020_NAME"]=approvers[0]["Approver4Name"];
+          formData["APPROVER_x0020_LEVEL4_x0020_EMAI"]=approvers[0]["Approver4Email"];
           formData["Notification1"]=approvers[0]["Notification1"];
           formData["Notification2"]=approvers[0]["Notification2"];
           formData["Notification3"]=approvers[0]["Notification3"]; 
+        }
+
+        let approvers1:any=SPAApprovers.filter((x:any)=>x.Title == "Chilli Related Purchase");
+        if(approvers1!=null && approvers1.length>0){
+          formData["APPROVER_x0020_LEVEL1_x0020_NAME"]=approvers1[0]["Approver1Name"];
+          formData["APPROVER_x0020_LEVEL1_x0020_EMAI"]=approvers1[0]["Approver1Email"];
         }
     }else  if(this.state.formData.CHILLI_x0020_RELATED_x0020_PURCH == "YES"){
         //formData.APPROVAL_x0020_STATUS= WorkFlowStatus.WAITINGFORPROCUREMENTLEADAPPROVAL;
