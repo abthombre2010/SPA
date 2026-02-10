@@ -467,24 +467,32 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
     if(formData.ENTEY_x0020_LEVEL2_x0020_REQUIRE=="YES" && this.state.formData.CHILLI_x0020_RELATED_x0020_PURCH == "YES"){
        let approvers:any=SPAApprovers.filter((x:any)=>x.Title == condition);
         if(approvers!=null && approvers.length>0){
-          formData["APPROVER_x0020_LEVEL1_x0020_NAME"]=approvers[0]["Approver1Name"];
-          formData["APPROVER_x0020_LEVEL1_x0020_EMAI"]=approvers[0]["Approver1Email"];
-          formData["APPROVER_x0020_LEVEL2_x0020_NAME"]=approvers[0]["Approver2Name"];
-          formData["APPROVER_x0020_LEVEL2_x0020_EMAI"]=approvers[0]["Approver2Email"];
-          formData["APPROVER_x0020_LEVEL3_x0020_NAME"]=approvers[0]["Approver3Name"];
-          formData["APPROVER_x0020_LEVEL3_x0020_EMAI"]=approvers[0]["Approver3Email"];
-          formData["APPROVER_x0020_LEVEL4_x0020_NAME"]=approvers[0]["Approver4Name"];
-          formData["APPROVER_x0020_LEVEL4_x0020_EMAI"]=approvers[0]["Approver4Email"];
+
+          let approvers1:any=SPAApprovers.filter((x:any)=>x.Title == "Chilli Related Purchase");
+          if(approvers1!=null && approvers1.length>0){
+            formData["APPROVER_x0020_LEVEL1_x0020_NAME"]=approvers1[0]["Approver1Name"];
+            formData["APPROVER_x0020_LEVEL1_x0020_EMAI"]=approvers1[0]["Approver1Email"];
+          }
+
+          let skipApprover2=false;
+          if(approvers1[0]["Approver1Email"]==approvers[0]["Approver2Email"])
+          skipApprover2=true;
+
+          formData["APPROVER_x0020_LEVEL2_x0020_NAME"]=approvers[0][(skipApprover2?"Approver3Name":"Approver2Name")];
+          formData["APPROVER_x0020_LEVEL2_x0020_EMAI"]=approvers[0][(skipApprover2?"Approver3Email":"Approver2Email")];
+          formData["APPROVER_x0020_LEVEL3_x0020_NAME"]=approvers[0][(skipApprover2?"Approver4Name":"Approver3Name")];
+          formData["APPROVER_x0020_LEVEL3_x0020_EMAI"]=approvers[0][(skipApprover2?"Approver4Email":"Approver3Email")];
+          if(!skipApprover2){
+            formData["APPROVER_x0020_LEVEL4_x0020_NAME"]=approvers[0]["Approver4Name"];
+            formData["APPROVER_x0020_LEVEL4_x0020_EMAI"]=approvers[0]["Approver4Email"];
+          }
+          
           formData["Notification1"]=approvers[0]["Notification1"];
           formData["Notification2"]=approvers[0]["Notification2"];
           formData["Notification3"]=approvers[0]["Notification3"]; 
         }
 
-        let approvers1:any=SPAApprovers.filter((x:any)=>x.Title == "Chilli Related Purchase");
-        if(approvers1!=null && approvers1.length>0){
-          formData["APPROVER_x0020_LEVEL1_x0020_NAME"]=approvers1[0]["Approver1Name"];
-          formData["APPROVER_x0020_LEVEL1_x0020_EMAI"]=approvers1[0]["Approver1Email"];
-        }
+       
     }else  if(this.state.formData.CHILLI_x0020_RELATED_x0020_PURCH == "YES"){
         //formData.APPROVAL_x0020_STATUS= WorkFlowStatus.WAITINGFORPROCUREMENTLEADAPPROVAL;
         let approvers1:any=SPAApprovers.filter((x:any)=>x.Title == "Chilli Related Purchase");
