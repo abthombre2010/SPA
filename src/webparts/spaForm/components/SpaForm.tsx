@@ -943,8 +943,8 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
     orignalText=orignalText.replace("$NextApprovers",nextApprovers);
     
     if(this.state.existingItem!=null && this.state.existingItem.length>0){
-      let supplier:any=this.state.existingItem[0]["EXISTING_x0020_SUPPLIER_x0020_NA"]!=null && this.state.existingItem[0]["EXISTING_x0020_SUPPLIER_x0020_NA"]!=""?this.state.existingItem[0]["EXISTING_x0020_SUPPLIER_x0020_NA"]:this.state.existingItem[0]["NEW_x0020_SUPPLIER_x0020_NAME"];
-      let product:any=this.state.existingItem[0]["EXISTING_x0020_PRODUCT_x0020_NAM"]!=null && this.state.existingItem[0]["EXISTING_x0020_PRODUCT_x0020_NAM"]!=""?this.state.existingItem[0]["EXISTING_x0020_PRODUCT_x0020_NAM"]:this.state.existingItem[0]["NEW_x0020_PRODUCT_x0020_NAME"];
+      let supplier:any=this.state.existingItem[0]["SUPPLIER_x0020_TYPE"]!="NEW"?this.state.existingItem[0]["EXISTING_x0020_SUPPLIER_x0020_NA"]:this.state.existingItem[0]["NEW_x0020_SUPPLIER_x0020_NAME"];
+      let product:any=this.state.existingItem[0]["PRODUCT_x0020_TYPE"]!="NEW"?this.state.existingItem[0]["EXISTING_x0020_PRODUCT_x0020_NAM"]:this.state.existingItem[0]["NEW_x0020_PRODUCT_x0020_NAME"];
       orignalText=orignalText.replace("$Supplier",supplier);
       orignalText=orignalText.replace("$Product",product);
       if(typeof this.state.formData.UOM == "object") 
@@ -953,8 +953,8 @@ export default class SpaForm extends React.Component<ISpaFormProps,ISpaFormState
         orignalText=orignalText.replace("$UOM",this.state.formData.UOM);
       
      }else{
-      let supplier:any=this.state.formData["EXISTING_x0020_SUPPLIER_x0020_NA"]!=null && this.state.formData["EXISTING_x0020_SUPPLIER_x0020_NA"]!=""?this.state.formData["EXISTING_x0020_SUPPLIER_x0020_NA"]:this.state.formData["NEW_x0020_SUPPLIER_x0020_NAME"];
-      let product:any=this.state.formData["EXISTING_x0020_PRODUCT_x0020_NAM"]!=null && this.state.formData["EXISTING_x0020_PRODUCT_x0020_NAM"]!=""?this.state.formData["EXISTING_x0020_PRODUCT_x0020_NAM"]:this.state.formData["NEW_x0020_PRODUCT_x0020_NAME"];
+      let supplier:any=this.state.formData["SUPPLIER_x0020_TYPE"]!="NEW"?this.state.formData["EXISTING_x0020_SUPPLIER_x0020_NA"]:this.state.formData["NEW_x0020_SUPPLIER_x0020_NAME"];
+      let product:any=this.state.formData["PRODUCT_x0020_TYPE"]!="NEW"?this.state.formData["EXISTING_x0020_PRODUCT_x0020_NAM"]:this.state.formData["NEW_x0020_PRODUCT_x0020_NAME"];
       orignalText=orignalText.replace("$Supplier",supplier);
       orignalText=orignalText.replace("$Product",product);
         if(typeof this.state.formData.UOM == "object") 
